@@ -14,7 +14,7 @@ output: html_document:
 ```{r setup, include=FALSE}
 # Gallagher's working directory for week 1, use session/set working directory
 # to set your working directory
-setwd("M:/EnvSci601/R/R_projects_F22/Wk01_IntroR_Ch01_F22/docs") 
+# setwd("M:/EnvSci601/R/R_projects_F22/Wk01_IntroR_Ch01_F22/docs") 
 
 knitr::opts_chunk$set(echo = TRUE)
 library(aplpack)
@@ -293,7 +293,7 @@ knitr::include_graphics('../images/Gelman_Nolan_BagofTricks.jpg')
 Toss a globe 9 times and record on Globe_Toss.csv, W or L each time. Then read the csv file as a tidyverse tibble.
 
 ```{r}
-d<-read_csv("../data/Globe_Toss.csv", col_names=TRUE, show_col_types = FALSE)  # csv delimited text file
+d<-read_csv("../data/Globe_Toss(2).csv", col_names=TRUE, show_col_types = FALSE)  # csv delimited text file
 glimpse(d)
 view(d)
 
