@@ -13,6 +13,12 @@ library(tidyverse)
 
 # Hankowsky Homework Solutions 
 
+Home Address: 26 S Water St. Apt 302, New Bedford, MA 02740
+Phone: 267-210-1403
+
+The type of statistical analysis I'm interested in is generalized linear models. I've used them for some of my work and I can get them to run in R and look at the diagnostic plots, but I don't really understand what's actually happening in the model.  
+
+
 ***
 
 # Basic Problems
