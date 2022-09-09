@@ -11,7 +11,7 @@ library(tidyverse)
 ```
 
 
-#Hankowsky Homework Solutions 
+# Hankowsky Homework Solutions 
 
 # Basic Problems
 ## 1.21
@@ -19,24 +19,67 @@ library(tidyverse)
 
 
 ## 1.27
+#### Boxplot of Percentage of Pro-Environment Votes by Political Party
 ```{r}
 #pulling the data from the 'Sleuth 3' package 
 senate <- Sleuth3::ex0127
 
+#creating a variable for the colors for the boxplot
+cols <- c("blue", "gray", "red")
+
+#boxplot of percentage of pro-environment votes by political party
+senate %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Party, y = PctPro), fill = cols) + 
+  scale_x_discrete(labels = c("Democrat", "Independent", "Republican")) +  
+  labs(x = "Political Party", y = "Pro-Environemnt Votes (%)") +
+  theme_classic()
 ```
+
+#### Map of Percentage of Pro-Environment Votes from 2005-2007
+```{r}
+library(maps)
+
+#reading in US state data 
+state <- map_data("state") 
+
+#getting the senate data in a format to merge w the states data
+senate_state <- senate %>% 
+  filter(PctPro >=0) %>%
+  mutate(State=tolower(State)) %>%
+  group_by(State) %>%
+  summarize(mean_pctpro= mean(PctPro,na.rm=TRUE))
+
+#map of percentage of pro-enviroment votes
+state %>% 
+  left_join(senate_state, by=c("region"="State")) %>%
+  ggplot(aes(x=long,y=lat,group=group, fill=mean_pctpro)) +
+  geom_polygon(color = "gray90", size = 0.1) +
+  coord_map(projection = "albers", lat0 = 45, lat1 = 55) +
+  scale_fill_continuous(low = "white", high = "forestgreen", name = "Pro-Environemnt Votes (%)")+
+  theme(legend.position="bottom",
+        axis.line=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid=element_blank())
+```
+There is a clear difference in the percentage of environmental votes among senators from different political parties. The median pro-environmental voting percengate was ~80 % for democrats and ~15 % for republicans. 
 
 
 
 # Supplemental Problems 
 ## 1.16 (Sleuth 2nd Edition)
-### A
+##### A
 ```{r}
 #A
 #pull the data from the 'Sleuth 2' package so I don't have to enter it manually
 planets <- Sleuth2::ex0116
 ```
 
-### B
+##### B
 ```{r}
 #B
 #plotting the distance from sun vs planet order 
@@ -50,7 +93,7 @@ planets %>%
   theme_classic()
 ```
 
-### C
+##### C
 ```{r}
 #C
 #plotting the natural log of distance from sun vs planet order
@@ -66,7 +109,7 @@ planets %>%
 
 ```
 
-### D
+##### D
 ```{r}
 #D
 summary(planets$Distance)
@@ -75,7 +118,7 @@ sd(planets$Distance)
 
 ```
 
-### E
+##### E
 ```{r}
 #E
 planets <- planets %>%
@@ -86,19 +129,44 @@ summary(planets$log_distance)
 sd(planets$log_distance)
 ```
 
+The mean distance from the Sun is 110.07 with a standard deviation of 139.57. The mean of the natural log of the distance from the Sun is 3.71 with a standard deviation of 1.63. However, the distance from the Sun is scaled so that Earth is equal to 10, so these means and standard deviations may not be very informative. 
+
+
 
 
 ## 1.26b (Sleuth 2nd Edition)
+### Side-by-Side Boxplot
 ```{r}
 library(aplpack)
 
-Group_a <- c(1.31, 1.45, 1.12, 1.16, 1.30, 1.50, 1.20, 1.22, 1.42, 1.14, 1.23, 1.59, 
+group_a <- c(1.31, 1.45, 1.12, 1.16, 1.30, 1.50, 1.20, 1.22, 1.42, 1.14, 1.23, 1.59, 
              1.11, 1.10, 1.53, 1.52, 1.17, 1.49, 1.62, 1.29)
   
-Group_b <- c(1.13, 1.71, 1.39, 1.15, 1.33, 1.00, 1.03, 1.68, 1.76, 1.55, 1.34, 1.47, 
-             1.74, 1.74, 1.19, 1.15, 1.20, 1.59, 1.47)
+group_b <- c(1.13, 1.71, 1.39, 1.15, 1.33, 1.00, 1.03, 1.68, 1.76, 1.55, 1.34, 1.47, 
+             1.74, 1.74, 1.19, 1.15, 1.20, 1.59, 1.47, NA)
 
-stem.leaf.backback(Group_a, Group_b, m = 1)
+rats <- do.call(rbind, Map(data.frame, group_a = group_a, group_b = group_b))
+
+rats <- rats %>%
+  pivot_longer(cols = c("group_a", "group_b"), 
+               names_to = "group", values_to = "zinc")
+
+rats %>%
+  ggplot() + 
+  geom_boxplot(aes(x = group, y = zinc)) + 
+  geom_jitter(aes(x = group, y = zinc), alpha = 0.4) + 
+  scale_x_discrete(labels = c("Calcium Supplement", "Control")) +  
+  labs(x = "Dietary Treatment", y = "Zinc Concentration (mg/ml)") +
+  theme_classic()
+  
 ```
+
+
+### Side-by-Side Stem and Leaf Plot
+```{r}
+stem.leaf.backback(group_a, group_b, m = 1)
+```
+
+The zinc concentrations (mg/ml) are slightly lower in the group that received the dietary supplement of calcium than the control group. The control group also had a greater variability (larger spread) in zinc concentrations than the calcium supplement group. 
 
 
