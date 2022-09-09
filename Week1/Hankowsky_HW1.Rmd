@@ -13,9 +13,43 @@ library(tidyverse)
 
 # Hankowsky Homework Solutions 
 
+***
+
 # Basic Problems
 ## 1.21
 
+*Fiorentini, Loris, Pierre-Yves Dremiere, Leonori Iole, Antonello Sala, and Vito Palumbo. “Efficiency of the Bottom Trawl Used for the Mediterranean International Trawl Survey (MEDITS).” Aquatic Living Resource 12, no. 3 (1999): 187–205.*
+
+The purpose of this study was to investigate the relative efficiency of a survey trawl compared to commercial trawl gear in the Mediterranean. No net is going to be efficient at catching every species, however, for survey nets it is important to understand which species it is more/less efficient at catching. The indices of abundance produced from survey trawl data are the gold standard for inclusion in stock assessment and so it is crucial to understand the catchability or efficiency compared to other nets because getting an estimate of the real catchability is near impossible. This study randomly selected the location of hauls on four fishing grounds to test the relative efficiency of a survey trawl compared to commercial fishing gears. The trawls were used on alternate days and the net used first was chosen randomly at the beginning of the trip. Thus, because the location of the trawls and the trawl type were randomly selected, both causal inferences and inferences about the catch per unit effort for the species of interest in the study. However, they can only drawn about the populations within the four fishing grounds were the study was conducted. The conclusions from the paper do not go beyond the scope allowed in Figure 1.5.
+
+<br>
+
+*Fogarty, Michael J. “Analysis of R/V Albatross IV - F/V Sea Breeze Trawl Configuration Experiment.” National Marine Fisheries Service, 2003.*
+
+A randomized complete block experiment design was used to investigate the effects of changes in survey gear and trawl wrap offset. Because of the randomized selection of tow points and the alternating use of net type. Inferences about the effect of the net on the fish populations of interest can be drawn. The conclusions from the paper do not go beyond the scope allowed in Figure 1.5.  
+
+<br>
+
+*Sistiaga, Manu, Bent Herrmann, Eduardo Grimaldo, and Finbarr O’Neill. “Estimating the Selectivity of Unpaired Trawl Data: A Case Study with a Pelagic Gear.” Scientia Marina 80, no. 3 (2016): 321–27.*
+
+This study looks at analyzing the selectivity of fishing gears from unpaired tows. This paper does not state whether the tow locations were conducted randomly. The different trawl gears were allocated randomly. Thus, neither causal inferences nor inferences about the populations can be drawn. However, they try to use a more advanced statistical technique, double bootstrapping, to account for variation between and within hauls. So, I am not totally sure if the paper's conclusions are beyond the scope of the statistical design, because I do not totally understand the advanced statistical methodology. 
+
+
+<br>
+
+*Walsh, S. J. “Relative Efficiency of Two Bottom Trawls in Catching Juvenile and Commercial-Sized Flatfishes in the Gulf of St. Lawrence.” Journal of Northwest Atlantic Fisheries Science 5 (1984): 181–88.*
+
+A comparison of the relative efficiencies of two survey trawls was conduct for three species of flatfish. The stations where the tows were conducted were not randomly selected and the treatment (trawl type used) was not randomized. They always conducted the altered trawl type 24hrs after the control trawl tow. Thus, neither causal inferences nor inferences about the populations can be drawn. The conclusions of the paper go beyond the scope allowed by the statistical design. 
+
+
+<br>
+
+*Jones, Andrew, W., Timothy Miller J., Philip Politis J., David Richardson E., Anna Mercer M., Michael Pol V., and Christopher Roebuck D.,. “Experimental Assessment of the Effect of Net Wing Spread on Relative Catch Efficiency of Four Flatfishes by a Four Seam Bottom Trawl.” Fisheries Research 244 (2021).*
+
+This survey investigated the relative efficiency of two trawl nets for four flatfish species. Tows were not randomly selected and instead were selected to increase the chance of encountering the target species. The nets (treatments) were not randomly selected, but they were towed simultaneously Thus, causal inferences can be drawn about the impact of the trawl nets on the catch per unit effort for the flatfish species. The conclusions of the paper do not go beyond the scope allowed by the experimental design.  
+
+
+***
 
 
 ## 1.27
@@ -66,11 +100,14 @@ state %>%
         panel.border=element_blank(),
         panel.grid=element_blank())
 ```
+
+<br>
+
 There is a clear difference in the percentage of environmental votes among senators from different political parties. The median pro-environmental voting percentage was ~80% for democrats and ~15% for republicans. The independents had a median pro environmental voting record of ~90%. However, there are three republican outliers that have a high pro-environment voting percentage and two democratic senators that are outliers with a pro-environment voting percentage of ~50%. 
 
 The map of the average percentage of pro-environment voting for each state shows that the Northeast and West of the U.S. show strong environmental voting percentage from 2005-2007. Surprising to me, the Midwest has a fairly strong environmental voting record, especially Illinois. The Southeast U.S. has a low environmental voting record for the time series, with Florida having a somewhat higher pro-environmental record than other states in the region. 
 
-
+***
 
 # Supplemental Problems 
 ## 1.16 (Sleuth 2nd Edition)
@@ -131,9 +168,12 @@ summary(planets$log_distance)
 sd(planets$log_distance)
 ```
 
+<br>
+
 The mean distance from the Sun is 110.07 with a standard deviation of 139.57. The mean of the natural log of the distance from the Sun is 3.71 with a standard deviation of 1.63. However, the distance from the Sun is scaled so that Earth is equal to 10, so these means and standard deviations may not be very informative. 
 
 
+***
 
 
 ## 1.26b (Sleuth 2nd Edition)
@@ -169,6 +209,11 @@ rats %>%
 stem.leaf.backback(group_a, group_b, m = 1)
 ```
 
+<br>
+
 The zinc concentrations (mg/ml) are slightly lower in the group that received the dietary supplement of calcium than the control group. The control group also had a greater variability (larger spread) in zinc concentrations than the calcium supplement group. 
 
+<br>
+<br>
+<br>
 
