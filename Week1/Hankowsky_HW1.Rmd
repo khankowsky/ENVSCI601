@@ -66,7 +66,9 @@ state %>%
         panel.border=element_blank(),
         panel.grid=element_blank())
 ```
-There is a clear difference in the percentage of environmental votes among senators from different political parties. The median pro-environmental voting percengate was ~80 % for democrats and ~15 % for republicans. 
+There is a clear difference in the percentage of environmental votes among senators from different political parties. The median pro-environmental voting percentage was ~80% for democrats and ~15% for republicans. The independents had a median pro environmental voting record of ~90%. However, there are three republican outliers that have a high pro-environment voting percentage and two democratic senators that are outliers with a pro-environment voting percentage of ~50%. 
+
+The map of the average percentage of pro-environment voting for each state shows that the Northeast and West of the U.S. show strong environmental voting percentage from 2005-2007. Surprising to me, the Midwest has a fairly strong environmental voting record, especially Illinois. The Southeast U.S. has a low environmental voting record for the time series, with Florida having a somewhat higher pro-environmental record than other states in the region. 
 
 
 
