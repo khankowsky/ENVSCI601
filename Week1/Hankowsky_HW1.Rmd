@@ -86,18 +86,18 @@ state <- map_data("state")
 
 #getting the senate data in a format to merge w the states data
 senate_state <- senate %>% 
-  filter(PctPro >=0) %>%
-  mutate(State=tolower(State)) %>%
+  filter(PctPro >= 0) %>%
+  mutate(State = tolower(State)) %>%
   group_by(State) %>%
-  summarize(mean_pctpro= mean(PctPro,na.rm=TRUE))
+  summarize(mean_pctpro = mean(PctPro,na.rm=TRUE))
 
 #map of percentage of pro-enviroment votes
 state %>% 
   left_join(senate_state, by=c("region"="State")) %>%
-  ggplot(aes(x=long,y=lat,group=group, fill=mean_pctpro)) +
+  ggplot(aes(x = long, y = lat, group = group, fill = mean_pctpro)) +
   geom_polygon(color = "gray90", size = 0.1) +
   coord_map(projection = "albers", lat0 = 45, lat1 = 55) +
-  scale_fill_continuous(low = "white", high = "forestgreen", name = "Pro-Environemnt Votes (%)")+
+  scale_fill_continuous(low = "white", high = "forestgreen", name = "Pro-Environemnt Votes (%)") +
   theme(legend.position="bottom",
         axis.line=element_blank(),
         axis.text=element_blank(),
