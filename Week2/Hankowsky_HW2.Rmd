@@ -5,7 +5,9 @@ date: "2022-09-14"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(Sleuth3)
+library(tidyverse)
+library(Hmisc)
 ```
 
 Hankowsky Homework Solutions 
@@ -15,26 +17,248 @@ Hankowsky Homework Solutions
 
 ## 2.22
 ```{r}
+#pulling the data from the 'Sleuth 3' package 
+intelligence <- Sleuth3::ex0222
+
+#transposing the data so it is in long format
+intelligence <- intelligence %>%
+  mutate(Gender = str_to_title(Gender)) %>%
+  pivot_longer(cols = c(Arith, Word, Parag, Math), 
+               names_to = "test", 
+               values_to = "score") 
+
+#boxplot of overall AFQT score by gender 
+intelligence %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Gender, y = AFQT, fill = Gender)) + 
+  labs(title = "Boxplot of AFQT Score by Gender", 
+    y = "Armed Forces Qualifying Test Score") + 
+  theme_classic() 
+
+
+#histogram of AFQT score by gender 
+ggplot() + 
+  geom_histogram(data = intelligence %>% 
+                   filter(Gender == "Male"), 
+                 aes(x = AFQT, y = ..density.., fill = Gender), color = "black") + 
+  geom_histogram(data = intelligence %>% 
+                   filter(Gender == "Female"), 
+                 aes(x = AFQT, y = -..density.., fill = Gender), color = "black") + 
+  labs(title = "Histogram of AFQT Score by Gender", 
+    x = "Armed Forces Qualifying Test Score", y = "Denstiy") + 
+  theme_classic()
+
+
+#boxplot of individual test components by gender 
+intelligence %>%
+  ggplot() + 
+  geom_boxplot(aes(x = test, y = score, fill = Gender)) +
+  scale_x_discrete(labels = c("Arithmetic\nReasoning", "Mathematical\nKnowledge", "Paragraph\nComprehension", "Word\nKnowledge")) +  
+  labs(title = "Boxplot of Individual Test Components of the AFQT by Gender", 
+    x = "\nArmed Forces Qualifying Test Component", y = "Test Score") +
+  theme_classic()
+
+
+#histogram of individual test components by gender 
+ggplot() + 
+  geom_histogram(data = intelligence %>% 
+                   filter(Gender == "Male"), 
+                 aes(x = score, y = ..density.., fill = Gender), color = "black") + 
+  geom_histogram(data = intelligence %>% 
+                   filter(Gender == "Female"), 
+                 aes(x = score, y = -..density.., fill = Gender), color = "black") + 
+  labs(title = "Histogram of Individual Test Components of the AFQT by Gender", 
+       x = "Test Score", y = "Density") + 
+  theme_classic() +
+  facet_wrap(~test, 
+             labeller = as_labeller(c(
+               Arith = "Arithmetic Reasoning", 
+               Math = "Mathematical Knowledge", 
+               Parag = "Paragraph Comprehension", 
+               Word = "Word Knowledge")))
+
+
+
+
+#running the t-test to see if there is a difference in AFQT score by gender 
+#turning the gender variable into a factor
+intel_t <- intelligence %>%
+  mutate(Gender = as.factor(Gender))
+
+#running the actual t-test
+t.test(AFQT ~ Gender, var.equal = TRUE, data = intel_t)
+
+
+#now looking at potential differences in each test component 
+#creating a dataset for each test component
+intel_t_arith <- intelligence %>%
+  mutate(Gender = as.factor(Gender)) %>%
+  filter(test == "Arith")
+
+intel_t_word <- intelligence %>%
+  mutate(Gender = as.factor(Gender)) %>%
+  filter(test == "Word")
+
+intel_t_parag <- intelligence %>%
+  mutate(Gender = as.factor(Gender)) %>%
+  filter(test == "Parag")
+
+intel_t_math <- intelligence %>%
+  mutate(Gender = as.factor(Gender)) %>%
+  filter(test == "Math")
+
+
+#running a t-test for each test component
+#arith
+t.test(score ~ Gender, var.equal = TRUE, data = intel_t_arith)
+
+#word
+t.test(score ~ Gender, var.equal = TRUE, data = intel_t_word)
+
+#parag
+t.test(score ~ Gender, var.equal = TRUE, data = intel_t_parag)
+
+#math
+t.test(score ~ Gender, var.equal = TRUE, data = intel_t_math)
 
 ```
+These data provide no evidence for a difference in male and female scoring on the overall Armed Forces Qualifying Test (two-sided p-value = 0.06 from a two-sample t-test). A 95% confidence interval for the difference in population means is -4.18 to 0.10 points. However, there was overwhelming evidence that
+
+
+
+***
 
 ## 3.32
 ```{r}
+#pulling the data from the 'Sleuth 3' package 
+tuition <- Sleuth3::ex0332
+
+#transposing the data so it's in long format 
+tuition_long <- tuition %>%
+  pivot_longer(cols = c(InState, OutOfState), 
+               names_to = "State", 
+               values_to = "Tuition") 
+
+
+#boxplot of in-state v out-of-state tuition 
+tuition_long %>%
+  ggplot() + 
+  geom_boxplot(aes(x = State, y = Tuition, fill = State)) + 
+  scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
+  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
+  labs(title = "Boxplot of In-State v, Out-Of-State Tuition", 
+       x = "") + 
+  theme_classic()
+
+
+#histogram of in-state v out-of-state tuition 
+ggplot() + 
+  geom_histogram(data = tuition_long %>% 
+                   filter(State == "InState"), 
+                 aes(x = Tuition, y = ..density.., fill = State), color = "black") + 
+  geom_histogram(data = tuition_long %>% 
+                   filter(State == "OutOfState"), 
+                 aes(x = Tuition, y = -..density.., fill = State), color = "black") + 
+  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
+  labs(title = "Histogram of In-State v, Out-Of-State Tuition", 
+       y = "Density") +
+  theme_classic()
+
+
+#boxplot of in-state v out-of-state tuition by university type (public/private)
+tuition_long %>%
+  ggplot() + 
+  geom_boxplot(aes(x = State, y = Tuition, fill = Type)) + 
+  scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
+  scale_fill_discrete(name = "University\nType") +
+  labs(title = "Boxplot of In-State v Out-Of-State Tuition by University Type", 
+       x = "") + 
+  theme_classic()
+
+
+
+#histogram of in-state v out-of-state tuition by university type (public/private)
+ggplot() + 
+  geom_histogram(data = tuition_long %>% 
+                   filter(State == "InState"), 
+                 aes(x = Tuition, y = ..density.., fill = State), color = "black") + 
+  geom_histogram(data = tuition_long %>% 
+                   filter(State == "OutOfState"), 
+                 aes(x = Tuition, y = -..density.., fill = State), color = "black") + 
+  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
+  labs(title = "Histogram of In-State v Out-Of-State Tuition by University Type", 
+       y = "Density") + 
+  theme_classic() + 
+  facet_wrap(~Type)
+
 
 ```
 
 
+
+
+
+
+
+***
 
 # Supplemental Problems 
 
 ## 2.21 (Sleuth 2nd Edition)
 ```{r}
+#pulling the data from the 'Sleuth 2' package 
+birds <- Sleuth2::ex0221
+
+birds <- birds %>%
+  mutate(Status = str_to_title(Status))
+
+
+#boxplot of bird weight and survival
+birds %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Status, y = Weight, fill = Status)) + 
+  labs (title = "Boxplot of Bird Weight and Survival", 
+    x = "", y = "Weight (g)") + 
+  theme_classic()
 
 ```
 
 
+
+
+
+***
+
 ## 3.31 (Sleuth 2nd Edition)
 ```{r}
+#pulling the data from the 'Sleuth 2' package 
+mice <- Sleuth2::ex0331
+
+#boxplot of mice iron supplement 
+mice %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Supplement, y = Iron, fill = Supplement)) + 
+  scale_x_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
+  scale_fill_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
+  labs (title = "Boxplot of Percent Iron Retained in Mice by Iron Supplement", 
+    x = "Iron Supplement", y = "Iron Retained (%)") + 
+  theme_classic()
+
+
+#histogram 
+ggplot() + 
+  geom_histogram(data = mice %>% 
+                   filter(Supplement == "Fe3"), 
+                 aes(x = Iron, y = ..density.., fill = Supplement), color = 1) + 
+  geom_histogram(data = mice %>% 
+                   filter(Supplement == "Fe4"), 
+                 aes(x = Iron, y = -..density.., fill = Supplement), color = 1) + 
+  scale_x_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
+  scale_fill_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
+  labs (title = "Histogram of Percent Iron Retained in Mice by Iro Supplement", 
+    x = "Iron Supplement", y = "Iron Retained (%)") + 
+  theme_classic()
+
 
 ```
 
