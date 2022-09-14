@@ -1,0 +1,40 @@
+---
+title: "Hankowsky_HW2"
+output: html_document
+date: "2022-09-14"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+
+## 2.22
+```{r}
+
+```
+
+## 3.32
+```{r}
+
+```
+
+
+
+# Supplemental Problems 
+
+## 2.21 (Sleuth 2nd Edition)
+```{r}
+
+```
+
+
+## 3.31 (Sleuth 2nd Edition)
+```{r}
+
+```
+
