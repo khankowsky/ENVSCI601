@@ -79,7 +79,6 @@ ggplot() +
 
 
 
-
 #running the t-test to see if there is a difference in AFQT score by gender 
 #turning the gender variable into a factor
 intel_t <- intelligence %>%
@@ -125,7 +124,9 @@ t.test(score ~ Gender, var.equal = TRUE, data = intel_t_math)
 
 <br>
 
-These data provide no evidence for a difference in male and female scoring on the overall Armed Forces Qualifying Test (two-sided p-value = 0.06 from a two-sample t-test). A 95% confidence interval for the difference in population means is -4.18 to 0.10 points. However, there was overwhelming evidence that Arithmetic Reasoning (p-value < 0.0001 from a two-sample t-test, 95% confidence interval -2.58 to 1.49 points) and Paragraph Comprehension (p-value < 0.0001 from a two-sample t-test, 95% confidence interval 0.33 to 0.81 points). There was strong evidence for a difference in male and female test scores for the Mathematical Knowledge component as well (p-value = 0.0023 from a two-sample t-test, 95% confidence interval -1.24 to 0.27 points). There was no evidence for a difference in male and female scoring on the Word Knowledge section (p-value = 0.93 from a two-sample t-test, 95% confidence interval -0.52 to 0.57 points).  
+The variance of the genders are about equal, so an equal variance two sample t-test was used. The histogram shows that both genders have a relatively uniform distributed, however, the two-sample t-test is robust to violations of normally distributed samples, so the analysis proceeded with an equal variance two sample t-test.These data provide strong evidence for a difference in male and female scoring on the overall Armed Forces Qualifying Test (two-sided p-value < 0.001 from an equal variance two-sample t-test). The mean score for males on the AFQT was 2.04 points greater than the female score (95% confidence interval: 0.97 to 3.11 points). 
+
+The variance between gender was about equal for each of the individual components of the AFQT, so an equal variance two sample t-test was used. The histograms for the individual components of the test were again relatively uniform with the exception of the 'Paragraph Comprehension' section. However, the two-sample t-test is robust to violations of normally distributed samples, so the analysis again proceeded with an equal variance two sample t-test.There was overwhelming evidence that Arithmetic Reasoning section score differed by gender (p-value < 0.000001 from an equal variance two-sample t-test) with the mean score for males 2.04 points higher than the female score (95% confidence interval: 1.49 to 2.58 points). The Paragraph Comprehension section also had overwhelming evidence that the score differed by gender (p-value < 0.00001 from an equal variance two-sample t-test). The mean female score was 0.57 points greater than the mean male score (95% confidence interval 0.33 to 0.81 points). There was strong evidence for a difference in male and female test scores for the Mathematical Knowledge component as well (p-value = 0.0023 from an equal variance two-sample t-test) with the mean male score 0.75 points higher than the mean female score (95% confidence interval: 0.27 to 1.24 points). There was no evidence for a difference in male and female scoring on the Word Knowledge section (p-value = 0.94 from an equal variance two-sample t-test). 
 
 
 
@@ -133,8 +134,101 @@ These data provide no evidence for a difference in male and female scoring on th
 
 ## 3.32
 ```{r}
-#pulling the data from the 'Sleuth 3' package 
+#pulling the data from the 'Sleuth 3' package
 tuition <- Sleuth3::ex0332
+
+#creating a column with the difference of outofstate tuition minus instate tuition
+tuition <- tuition %>%
+  mutate(diff = OutOfState - InState)
+
+#boxplot of the difference in tuitions
+tuition %>%
+  ggplot() +
+  geom_boxplot(aes(y = diff)) +
+  labs(title = "Tuition Difference: Out-Of-State minus In-State",
+       y = "Difference in Out-Of-State and In-State Tution ($)",
+       x = "50 Colleges") +
+  theme_classic()
+
+#histogram of the difference in tuitions
+tuition %>%
+  ggplot() +
+  geom_histogram(aes(x = diff)) +
+  labs(title = "Tuition Difference: Out-Of-State minus In-State",
+       x = "Difference in Out-Of-State and In-State Tution ($)",
+       y = "Count") +
+  theme_classic()
+
+
+tuition <- tuition %>%
+  mutate(log_outofstate = log(OutOfState),
+         log_instate = log(InState),
+         diff_of_logs = log_outofstate - log_instate)
+
+
+
+tuition %>%
+  ggplot() +
+  geom_boxplot(aes(y = diff_of_logs))
+
+tuition %>%
+  ggplot() +
+  geom_histogram(aes(x = diff_of_logs))
+
+
+###############################################################################
+
+
+#t-test time
+#in/out of state tuition in public
+tuition_public_t <- tuition %>%
+  filter(Type == "Public")
+
+t1 <- t.test(log_outofstate, log_instate, paired = TRUE, data = tuition_public_t)
+t1
+
+#back transform estimate and CI
+exp(t1$est[1]) - exp(t1$est[2])
+exp(t1$conf.int)
+
+
+
+#public v private in state tuition
+tuition_instate_t <- tuition_long %>%
+  filter(State == "InState")
+
+t2 <- t.test(log_instate ~ Type, var.equal = TRUE, data = tuition_instate_t)
+t2
+
+#back transform estimate and CI
+exp(t2$est[1]) - exp(t2$est[2])
+exp(t2$conf.int)
+
+
+
+#public v private out of state tuition
+tuition_outstate_t <- tuition_long %>%
+  filter(State == "OutOfState")
+
+t3 <- t.test(log_outofstate ~ Type, var.equal = FALSE, data = tuition_outstate_t)
+t3
+
+#back transform estimate and CI
+exp(t3$est[1]) - exp(t3$est[2])
+exp(t3$conf.int)
+
+
+
+
+
+
+
+
+```
+
+```{r, eval = FALSE, include = FALSE}
+#ALL CODE I WROTE BEFORE I REALIZED THIS WAS A PAIRED T-TEST PROBLEM, 
+#COULDNT BRING MYSELF TO DELETE IT
 
 #transposing the data so it's in long format 
 tuition_long <- tuition %>%
@@ -149,7 +243,7 @@ tuition_long %>%
   geom_boxplot(aes(x = State, y = Tuition, fill = State)) + 
   scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
   scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
-  labs(title = "Boxplot of In-State v, Out-Of-State Tuition", 
+  labs(title = "Boxplot of In-State vs Out-Of-State Tuition", 
        x = "") + 
   theme_classic()
 
@@ -163,7 +257,7 @@ ggplot() +
                    filter(State == "OutOfState"), 
                  aes(x = Tuition, y = -..density.., fill = State), color = "black") + 
   scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
-  labs(title = "Histogram of In-State v, Out-Of-State Tuition", 
+  labs(title = "Histogram of In-State vs Out-Of-State Tuition", 
        y = "Density") +
   theme_classic()
 
@@ -174,7 +268,7 @@ tuition_long %>%
   geom_boxplot(aes(x = State, y = Tuition, fill = Type)) + 
   scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
   scale_fill_discrete(name = "University\nType") +
-  labs(title = "Boxplot of In-State v Out-Of-State Tuition by University Type", 
+  labs(title = "Boxplot of In-State vs Out-Of-State Tuition by University Type", 
        x = "") + 
   theme_classic()
 
@@ -189,14 +283,114 @@ ggplot() +
                    filter(State == "OutOfState"), 
                  aes(x = Tuition, y = -..density.., fill = State), color = "black") + 
   scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
-  labs(title = "Histogram of In-State v Out-Of-State Tuition by University Type", 
+  labs(title = "Histogram of In-State vs Out-Of-State Tuition by University Type", 
        y = "Density") + 
   theme_classic() + 
   facet_wrap(~Type)
 
 
+###############################################################################
+#transforming the data 
+tuition_long <- tuition_long %>%
+  mutate(log_tuition = log(Tuition))
+
+#boxplot of in-state v out-of-state tuition 
+tuition_long %>%
+  ggplot() + 
+  geom_boxplot(aes(x = State, y = log_tuition, fill = State)) + 
+  scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
+  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
+  labs(title = "Boxplot of In-State vs Out-Of-State Ln(Tuition)", 
+       x = "", y = "Ln(Tuition)") + 
+  theme_classic()
+
+
+#histogram of in-state v out-of-state tuition 
+ggplot() + 
+  geom_histogram(data = tuition_long %>% 
+                   filter(State == "InState"), 
+                 aes(x = log_tuition, y = ..density.., fill = State), color = "black") + 
+  geom_histogram(data = tuition_long %>% 
+                   filter(State == "OutOfState"), 
+                 aes(x = log_tuition, y = -..density.., fill = State), color = "black") + 
+  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
+  labs(title = "Histogram of In-State vs Out-Of-State Ln(Tuition)", 
+       y = "Density", x = "Ln(Tuition)") +
+  theme_classic()
+
+
+#boxplot of in-state v out-of-state tuition by university type (public/private)
+tuition_long %>%
+  ggplot() + 
+  geom_boxplot(aes(x = State, y = log_tuition, fill = Type)) + 
+  scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
+  scale_fill_discrete(name = "University\nType") +
+  labs(title = "Boxplot of In-State vs Out-Of-State Ln(Tuition) by University Type", 
+       x = "", y = "Ln(Tuition)") + 
+  theme_classic()
+
+
+
+#histogram of in-state v out-of-state tuition by university type (public/private)
+ggplot() + 
+  geom_histogram(data = tuition_long %>% 
+                   filter(State == "InState"), 
+                 aes(x = log_tuition, y = ..density.., fill = State), color = "black") + 
+  geom_histogram(data = tuition_long %>% 
+                   filter(State == "OutOfState"), 
+                 aes(x = log_tuition, y = -..density.., fill = State), color = "black") + 
+  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
+  labs(title = "Histogram of In-State vs Out-Of-State Ln(Tuition) by University Type", 
+       y = "Density", x = "Ln(Tuition)") + 
+  theme_classic() + 
+  facet_wrap(~Type)
+
+
+
+###############################################################################
+#t-test time 
+#in/out of state tuition in public
+tuition_public_t <- tuition_long %>%
+  filter(Type == "Public")
+
+t1 <- t.test(log_tuition ~ State, var.equal = FALSE, data = tuition_public_t)
+t1
+
+#back transform estimate and CI
+exp(t1$est[1]) - exp(t1$est[2])
+exp(t1$conf.int)
+
+
+
+#public v private in state tuition 
+tuition_instate_t <- tuition_long %>%
+  filter(State == "InState")
+
+t2 <- t.test(log_tuition ~ Type, var.equal = TRUE, data = tuition_instate_t)
+t2
+
+#back transform estimate and CI
+exp(t2$est[1]) - exp(t2$est[2])
+exp(t2$conf.int)
+
+
+
+#public v private out of state tuition 
+tuition_outstate_t <- tuition_long %>%
+  filter(State == "OutOfState")
+
+t3 <- t.test(log_tuition ~ Type, var.equal = FALSE, data = tuition_outstate_t)
+t3
+
+#back transform estimate and CI
+exp(t3$est[1]) - exp(t3$est[2])
+exp(t3$conf.int)
+
+
 ```
 
+
+These data provide overwhelming evidence for a difference in in-state and out-of-state tuition in public schools (two-sided p-value < 0.00001 from an unequal variance two-sample t-test). The mean for out-of-state tuition for public universities was $8,710 greater than the in-state tuition (95% confidence interval: 0.36 to 0.53 dollars). 
 
 
 
@@ -212,6 +406,7 @@ ggplot() +
 #pulling the data from the 'Sleuth 2' package 
 birds <- Sleuth2::ex0221
 
+#just cleaning up the dataset to make it easier for plotting; capitalizing the status
 birds <- birds %>%
   mutate(Status = str_to_title(Status))
 
@@ -235,7 +430,7 @@ ggplot() +
                  aes(x = Weight, y = -..density.., fill = Status), color = "black") + 
 
   labs (title = "Histogram of Bird Weight and Survival", 
-    x = "", y = "Weight (g)") + 
+    x = "Weight (g)", y = "Density") + 
   theme_classic()
 
 
@@ -246,13 +441,14 @@ birds_t <- birds %>%
   mutate(Status = as.factor(Status))
 
 #running the actual t-test
-t.test(Weight ~ Status, var.equal = TRUE, data = birds_t) 
+t.test(Weight ~ Status, var.equal = FALSE, data = birds_t) 
 
 ```
 
 <br>
 
-These data provide moderate evidence for a difference in survival based on the weight of the finch (two-sided p-value = 0.027 from a two-sample t-test). The mean for the birds that perished was estimated to exceed the mean for the birds that survived by 0.81 grams (95% confidence interval: 0.096 to 1.53 grams).
+
+The variance for the bird status were not equal, so an unequal variance two sample t-test was used. The histograms show that both the survival and perished groups are relatively normally distributed. These data provide moderate evidence for a difference in survival based on the house sparrow's weight (two-sided p-value = 0.033 from an unequal variance two-sample t-test). The mean for the birds that perished was estimated to exceed the mean for the birds that survived by 0.81 grams (95% confidence interval: 0.70 to 1.55 grams).
 
 
 
@@ -282,12 +478,24 @@ ggplot() +
   geom_histogram(data = mice %>% 
                    filter(Supplement == "Fe4"), 
                  aes(x = Iron, y = -..density.., fill = Supplement), color = "black") + 
-  scale_x_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
   scale_fill_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
-  labs (title = "Histogram of Percent Iron Retained in Mice by Iro Supplement", 
-    x = "Iron Supplement", y = "Iron Retained (%)") + 
+  labs (title = "Histogram of Percent Iron Retained in Mice by Iron Supplement", 
+    x = "Iron Retained (%)", y = "Count") + 
   theme_classic()
 
 
+#running the t-test to see if there is a difference in mouse percentage of iron retained by iron supplement type 
+#turning the survival variable into a factor
+mice_t <- mice %>%
+  mutate(Supplement = as.factor(Supplement))
+
+#running the actual t-test
+t.test(Iron ~ Supplement, var.equal = FALSE, data = mice_t) 
 ```
 
+<br>
+
+The variance for the two iron supplement groups are not equal, so an unequal variance two sample t-test was used. The histograms show that both iron supplement groups are relatively normally distributed. These data provide moderate evidence for a difference in percent iron retained based on the iron supplement type (two-sided p-value = 0.01 from an unequal variance two-sample t-test). The mean for the Fe4+ iron supplement was 2.24 percent greater than the mean for the Fe3+ iron supplement group (95% confidence interval: 0.57 to 3.90 %). 
+
+<br>
+<br>
