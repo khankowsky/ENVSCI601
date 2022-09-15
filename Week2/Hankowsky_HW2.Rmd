@@ -122,7 +122,10 @@ t.test(score ~ Gender, var.equal = TRUE, data = intel_t_parag)
 t.test(score ~ Gender, var.equal = TRUE, data = intel_t_math)
 
 ```
-These data provide no evidence for a difference in male and female scoring on the overall Armed Forces Qualifying Test (two-sided p-value = 0.06 from a two-sample t-test). A 95% confidence interval for the difference in population means is -4.18 to 0.10 points. However, there was overwhelming evidence that
+
+<br>
+
+These data provide no evidence for a difference in male and female scoring on the overall Armed Forces Qualifying Test (two-sided p-value = 0.06 from a two-sample t-test). A 95% confidence interval for the difference in population means is -4.18 to 0.10 points. However, there was overwhelming evidence that Arithmetic Reasoning (p-value < 0.0001 from a two-sample t-test, 95% confidence interval -2.58 to 1.49 points) and Paragraph Comprehension (p-value < 0.0001 from a two-sample t-test, 95% confidence interval 0.33 to 0.81 points). There was strong evidence for a difference in male and female test scores for the Mathematical Knowledge component as well (p-value = 0.0023 from a two-sample t-test, 95% confidence interval -1.24 to 0.27 points). There was no evidence for a difference in male and female scoring on the Word Knowledge section (p-value = 0.93 from a two-sample t-test, 95% confidence interval -0.52 to 0.57 points).  
 
 
 
@@ -221,9 +224,35 @@ birds %>%
     x = "", y = "Weight (g)") + 
   theme_classic()
 
+
+#histogram of bird weight and survival 
+ggplot() + 
+  geom_histogram(data = birds %>% 
+                   filter(Status == "Survived"), 
+                 aes(x = Weight, y = ..density.., fill = Status), color = "black") + 
+  geom_histogram(data = birds %>% 
+                   filter(Status == "Perished"), 
+                 aes(x = Weight, y = -..density.., fill = Status), color = "black") + 
+
+  labs (title = "Histogram of Bird Weight and Survival", 
+    x = "", y = "Weight (g)") + 
+  theme_classic()
+
+
+
+#running the t-test to see if there is a difference in bird survival by weight 
+#turning the survival variable into a factor
+birds_t <- birds %>%
+  mutate(Status = as.factor(Status))
+
+#running the actual t-test
+t.test(Weight ~ Status, var.equal = TRUE, data = birds_t) 
+
 ```
 
+<br>
 
+These data provide moderate evidence for a difference in survival based on the weight of the finch (two-sided p-value = 0.027 from a two-sample t-test). The mean for the birds that perished was estimated to exceed the mean for the birds that survived by 0.81 grams (95% confidence interval: 0.096 to 1.53 grams).
 
 
 
@@ -234,7 +263,7 @@ birds %>%
 #pulling the data from the 'Sleuth 2' package 
 mice <- Sleuth2::ex0331
 
-#boxplot of mice iron supplement 
+#boxplot of mice iron retained and supplement 
 mice %>%
   ggplot() + 
   geom_boxplot(aes(x = Supplement, y = Iron, fill = Supplement)) + 
@@ -245,14 +274,14 @@ mice %>%
   theme_classic()
 
 
-#histogram 
+#histogram of mice iron retained and supplement 
 ggplot() + 
   geom_histogram(data = mice %>% 
                    filter(Supplement == "Fe3"), 
-                 aes(x = Iron, y = ..density.., fill = Supplement), color = 1) + 
+                 aes(x = Iron, y = ..density.., fill = Supplement), color = "black") + 
   geom_histogram(data = mice %>% 
                    filter(Supplement == "Fe4"), 
-                 aes(x = Iron, y = -..density.., fill = Supplement), color = 1) + 
+                 aes(x = Iron, y = -..density.., fill = Supplement), color = "black") + 
   scale_x_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
   scale_fill_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
   labs (title = "Histogram of Percent Iron Retained in Mice by Iro Supplement", 
