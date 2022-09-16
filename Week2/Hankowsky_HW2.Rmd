@@ -137,9 +137,23 @@ The variance between gender was about equal for each of the individual component
 #pulling the data from the 'Sleuth 3' package
 tuition <- Sleuth3::ex0332
 
+#transposing the data so it's in long format 
+tuition_long <- tuition %>%
+  pivot_longer(cols = c(InState, OutOfState), 
+               names_to = "State", 
+               values_to = "Tuition") 
+
 #creating a column with the difference of outofstate tuition minus instate tuition
+tuition_long <- tuition_long %>%
+  group_by(College) %>%
+  mutate(diff = Tuition - lag(Tuition))
+
 tuition <- tuition %>%
-  mutate(diff = OutOfState - InState)
+  mutate(diff = OutOfState - lag(Tuition))
+
+
+
+
 
 #boxplot of the difference in tuitions
 tuition %>%
@@ -170,11 +184,11 @@ tuition <- tuition %>%
 
 tuition %>%
   ggplot() +
-  geom_boxplot(aes(y = diff_of_logs))
+  geom_boxplot(aes(y = log_diff))
 
 tuition %>%
   ggplot() +
-  geom_histogram(aes(x = diff_of_logs))
+  geom_histogram(aes(x = log_diff))
 
 
 ###############################################################################
@@ -231,11 +245,7 @@ exp(t3$conf.int)
 #ALL CODE I WROTE BEFORE I REALIZED THIS WAS A PAIRED T-TEST PROBLEM, 
 #COULDNT BRING MYSELF TO DELETE IT
 
-#transposing the data so it's in long format 
-tuition_long <- tuition %>%
-  pivot_longer(cols = c(InState, OutOfState), 
-               names_to = "State", 
-               values_to = "Tuition") 
+
 
 
 #boxplot of in-state v out-of-state tuition 
