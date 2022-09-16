@@ -124,7 +124,7 @@ t.test(score ~ Gender, var.equal = TRUE, data = intel_t_math)
 
 <br>
 
-The variance of the genders are about equal, so an equal variance two sample t-test was used. The histogram shows that both genders have a relatively uniform distributed, however, the two-sample t-test is robust to violations of normally distributed samples, so the analysis proceeded with an equal variance two sample t-test.These data provide strong evidence for a difference in male and female scoring on the overall Armed Forces Qualifying Test (two-sided p-value < 0.001 from an equal variance two-sample t-test). The mean score for males on the AFQT was 2.04 points greater than the female score (95% confidence interval: 0.97 to 3.11 points). 
+The variance of the genders are about equal, so an equal variance two sample t-test was used. The histogram shows that both genders have a relatively uniform distributed, however, the two-sample t-test is robust to violations of normally distributed samples, so the analysis proceeded with an equal variance two sample t-test.These data provide strong evidence for a difference in male and female scoring on the overall Armed Forces Qualifying Test (two-sided p-value < 0.001 from an equal variance two-sample t-test). The mean score for males on the AFQT was 2.04 points greater than the mean female score (95% confidence interval: 0.97 to 3.11 points). 
 
 The variance between gender was about equal for each of the individual components of the AFQT, so an equal variance two sample t-test was used. The histograms for the individual components of the test were again relatively uniform with the exception of the 'Paragraph Comprehension' section. However, the two-sample t-test is robust to violations of normally distributed samples, so the analysis again proceeded with an equal variance two sample t-test.There was overwhelming evidence that Arithmetic Reasoning section score differed by gender (p-value < 0.000001 from an equal variance two-sample t-test) with the mean score for males 2.04 points higher than the female score (95% confidence interval: 1.49 to 2.58 points). The Paragraph Comprehension section also had overwhelming evidence that the score differed by gender (p-value < 0.00001 from an equal variance two-sample t-test). The mean female score was 0.57 points greater than the mean male score (95% confidence interval 0.33 to 0.81 points). There was strong evidence for a difference in male and female test scores for the Mathematical Knowledge component as well (p-value = 0.0023 from an equal variance two-sample t-test) with the mean male score 0.75 points higher than the mean female score (95% confidence interval: 0.27 to 1.24 points). There was no evidence for a difference in male and female scoring on the Word Knowledge section (p-value = 0.94 from an equal variance two-sample t-test). 
 
@@ -163,6 +163,7 @@ tuition %>%
 tuition <- tuition %>%
   mutate(log_outofstate = log(OutOfState),
          log_instate = log(InState),
+         log_diff = log(diff), 
          diff_of_logs = log_outofstate - log_instate)
 
 
@@ -184,7 +185,7 @@ tuition %>%
 tuition_public_t <- tuition %>%
   filter(Type == "Public")
 
-t1 <- t.test(log_outofstate, log_instate, paired = TRUE, data = tuition_public_t)
+t1 <- t.test(log_outofstate, log_instate, data = tuition_public_t, paired = TRUE)
 t1
 
 #back transform estimate and CI
@@ -480,7 +481,7 @@ ggplot() +
                  aes(x = Iron, y = -..density.., fill = Supplement), color = "black") + 
   scale_fill_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
   labs (title = "Histogram of Percent Iron Retained in Mice by Iron Supplement", 
-    x = "Iron Retained (%)", y = "Count") + 
+    x = "Iron Retained (%)", y = "Density") + 
   theme_classic()
 
 
