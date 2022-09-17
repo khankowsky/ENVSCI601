@@ -1,0 +1,237 @@
+---
+title: "Hankowsky_HW1"
+author: "Keith Hankowsky"
+date: '2022-09-09'
+output: html_document
+---
+
+```{r, include = FALSE}
+library(Sleuth3)
+library(tidyverse)
+```
+
+<span style="color: magenta"> _General Comments [Gallagher's comments in magenta]:_  Thanks for the information. We live about 5 blocks apart. The best book on diagnostic analyses of linear and generalized linear models is Fox & Weisberag's (2019) A R Companion to Applied Regression, 3rd edition. Most of the diagnostics for GLM's in R come from the CAR package, which accompanies this book. The cost is $74.67 on Amazon, a bit too high for the lab fee book for this course. The 2nd edition is available for just 4.30 on Abebooks.
+I had to install the mapproj package, and after reading your 1.27 I'm glad I did.
+Your four solutions were the best I've received so far (I'm still grading). I usually pick the best analysis for class presentation, and I could have selected any of your 4 presentations. In fact, I'd picked you for 1.21 until I read your solution to 1.27. 
+I hope that you can work out the finances with UMD/UMB so that you can stay in the class. If you can, then pick a book in the $50 range and I'll order it for you.  **Score: Basic = 10/10, Supplemental = 5/5,  Total points = 15** </span>
+
+# Hankowsky Homework Solutions 
+
+Home Address: 26 S Water St. Apt 302, New Bedford, MA 02740
+
+Phone: 267-210-1403
+
+The type of statistical analysis I'm interested in is generalized linear models. I've used them for some of my work and I can get them to run in R and look at the diagnostic plots, but I don't really understand what's actually happening in the model.  
+
+
+***
+
+# Basic Problems
+## 1.21
+
+*Fiorentini, Loris, Pierre-Yves Dremiere, Leonori Iole, Antonello Sala, and Vito Palumbo. “Efficiency of the Bottom Trawl Used for the Mediterranean International Trawl Survey (MEDITS).” Aquatic Living Resource 12, no. 3 (1999): 187–205.*
+
+The purpose of this study was to investigate the relative efficiency of a survey trawl compared to commercial trawl gear in the Mediterranean. No net is going to be efficient at catching every species, however, for survey nets it is important to understand which species it is more/less efficient at catching. The indices of abundance produced from survey trawl data are the gold standard for inclusion in stock assessment and so it is crucial to understand the catchability or efficiency compared to other nets because getting an estimate of the real catchability is near impossible. This study randomly selected the location of hauls on four fishing grounds to test the relative efficiency of a survey trawl compared to commercial fishing gears. The trawls were used on alternate days and the net used first was chosen randomly at the beginning of the trip. Thus, because the location of the trawls and the trawl type were randomly selected, both causal inferences and inferences about the catch per unit effort for the species of interest in the study. However, they can only drawn about the populations within the four fishing grounds were the study was conducted. The conclusions from the paper do not go beyond the scope allowed in Figure 1.5.
+
+<br>
+
+*Fogarty, Michael J. “Analysis of R/V Albatross IV - F/V Sea Breeze Trawl Configuration Experiment.” National Marine Fisheries Service, 2003.*
+
+A randomized complete block experiment design was used to investigate the effects of changes in survey gear and trawl wrap offset. Because of the randomized selection of tow points and the alternating use of net type. Inferences about the effect of the net on the fish populations of interest can be drawn. The conclusions from the paper do not go beyond the scope allowed in Figure 1.5.  
+
+<br>
+
+*Sistiaga, Manu, Bent Herrmann, Eduardo Grimaldo, and Finbarr O’Neill. “Estimating the Selectivity of Unpaired Trawl Data: A Case Study with a Pelagic Gear.” Scientia Marina 80, no. 3 (2016): 321–27.*
+
+This study looks at analyzing the selectivity of fishing gears from unpaired tows. This paper does not state whether the tow locations were conducted randomly. The different trawl gears were allocated randomly. Thus, neither causal inferences nor inferences about the populations can be drawn. However, they try to use a more advanced statistical technique, double bootstrapping, to account for variation between and within hauls. So, I am not totally sure if the paper's conclusions are beyond the scope of the statistical design, because I do not totally understand the advanced statistical methodology. 
+
+
+<br>
+
+*Walsh, S. J. “Relative Efficiency of Two Bottom Trawls in Catching Juvenile and Commercial-Sized Flatfishes in the Gulf of St. Lawrence.” Journal of Northwest Atlantic Fisheries Science 5 (1984): 181–88.*
+
+A comparison of the relative efficiencies of two survey trawls was conduct for three species of flatfish. The stations where the tows were conducted were not randomly selected and the treatment (trawl type used) was not randomized. They always conducted the altered trawl type 24hrs after the control trawl tow. Thus, neither causal inferences nor inferences about the populations can be drawn. The conclusions of the paper go beyond the scope allowed by the statistical design. 
+
+
+<br>
+
+*Jones, Andrew, W., Timothy Miller J., Philip Politis J., David Richardson E., Anna Mercer M., Michael Pol V., and Christopher Roebuck D.,. “Experimental Assessment of the Effect of Net Wing Spread on Relative Catch Efficiency of Four Flatfishes by a Four Seam Bottom Trawl.” Fisheries Research 244 (2021).*
+
+This survey investigated the relative efficiency of two trawl nets for four flatfish species. Tows were not randomly selected and instead were selected to increase the chance of encountering the target species. The nets (treatments) were not randomly selected, but they were towed simultaneously Thus, causal inferences can be drawn about the impact of the trawl nets on the catch per unit effort for the flatfish species. The conclusions of the paper do not go beyond the scope allowed by the experimental design.  
+
+<span style="color: magenta"> _1.21:_ Excellent analyses! I'd like you to present your solution to Ex1.21 Tuesday night (see below, I'd now like you to present 1.27). You might focus on 2 of the 5 studies: one where the inferences in the published study conformed to the principles in Table 1.5 and one where you found problems. I read the Fiorentini et al. article, which was available on Google scholar. I was very pleased to see a paper by McConaughy & Conquest on the need for log transforming fisheries data. I showed a picture of Loveday Conquest in my Week 1 lecture. She was hired at UW by Brian Rothschild (Dean emeritus of UMass Dartmouth SMAST) and was a great prof (and strikingly beautiful). The Fiorentini analysis was interesting. They used a 2-factor ANOVA but didn't spend much time on the model. It must have been with trip being one factor and trawl type being the other. We'll cover 2-factor ANOVA in Chapter 13 (Week 8). There were undoubtedly differences in catch between fishing trips and trawls. They report that there were no interactions between trip and trawl type, "Because all the ANOVA tests showed the factor trip to be highly significant and trawl-trip interactions to be non-significant, only the probability associated with the trawl factor is reported." The survey trawl performed uniformly badly in sampling in all 4 fishing trips.
+
+I was going to  have you present 1.21, but your answer to 1.27 was so much better than other students. I'd like you to present that instead! **Score: 5/5.** </span>
+
+***
+
+
+## 1.27
+#### Boxplot of Percentage of Pro-Environment Votes by Political Party
+```{r}
+#pulling the data from the 'Sleuth 3' package 
+senate <- Sleuth3::ex0127
+
+#creating a variable for the colors for the boxplot
+cols <- c("blue", "gray", "red")
+
+#boxplot of percentage of pro-environment votes by political party
+senate %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Party, y = PctPro), fill = cols) + 
+  scale_x_discrete(labels = c("Democrat", "Independent", "Republican")) +  
+  labs(x = "Political Party", y = "Pro-Environemnt Votes (%)") +
+  theme_classic()
+```
+
+#### Map of Percentage of Pro-Environment Votes from 2005-2007
+```{r}
+library(maps)
+
+#reading in US state data 
+state <- map_data("state") 
+
+#getting the senate data in a format to merge w the states data
+senate_state <- senate %>% 
+  filter(PctPro >=0) %>%
+  mutate(State=tolower(State)) %>%
+  group_by(State) %>%
+  summarize(mean_pctpro= mean(PctPro,na.rm=TRUE))
+
+#map of percentage of pro-environment votes
+state %>% 
+  left_join(senate_state, by=c("region"="State")) %>%
+  ggplot(aes(x=long,y=lat,group=group, fill=mean_pctpro)) +
+  geom_polygon(color = "gray90", size = 0.1) +
+  coord_map(projection = "albers", lat0 = 45, lat1 = 55) +
+  scale_fill_continuous(low = "white", high = "forestgreen", name = "Pro-Environemnt Votes (%)")+
+  theme(legend.position="bottom",
+        axis.line=element_blank(),
+        axis.text=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title=element_blank(),
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid=element_blank())
+```
+
+<br>
+
+There is a clear difference in the percentage of environmental votes among senators from different political parties. The median pro-environmental voting percentage was ~80% for democrats and ~15% for republicans. The independents had a median pro environmental voting record of ~90%. However, there are three republican outliers that have a high pro-environment voting percentage and two democratic senators that are outliers with a pro-environment voting percentage of ~50%. 
+
+The map of the average percentage of pro-environment voting for each state shows that the Northeast and West of the U.S. show strong environmental voting percentage from 2005-2007. Surprising to me, the Midwest has a fairly strong environmental voting record, especially Illinois. The Southeast U.S. has a low environmental voting record for the time series, with Florida having a somewhat higher pro-environmental record than other states in the region. 
+
+<span style="color: magenta"> _1.27:_ Excellent analysis! I'd like you to present this on Tuesday night. You even got the Democrats  & Republicans properly plotted as blue and red. I had no idea that you could map the data onto states so beautifully! Montana is an interesting state with one pro-environment Senator (Tester) and one anti-Environment Republican; they average out to about 50%. One question that I had is what about Loiusiana? **Score: 5/5. Total Basic Score 10/10**</span>
+
+***
+
+# Supplemental Problems 
+## 1.16 (Sleuth 2nd Edition)
+##### A
+```{r}
+#A
+#pull the data from the 'Sleuth 2' package so I don't have to enter it manually
+planets <- Sleuth2::ex0116
+```
+
+##### B
+```{r}
+#B
+#plotting the distance from sun vs planet order 
+planets %>%
+  mutate(Order = as.factor(Order)) %>%
+  ggplot() + 
+  geom_point(aes(x = Order, y = Distance)) + 
+  geom_text(aes(x = Order, y = Distance, label = Planet), hjust = 0, nudge_x = 0.09) + 
+  scale_x_discrete(breaks = seq(0,10,1)) + 
+  labs(x = "Planet Order", y = "Distance from Sun") + 
+  theme_classic()
+```
+
+##### C
+```{r}
+#C
+#plotting the natural log of distance from sun vs planet order
+planets %>%
+  mutate(Order = as.factor(Order)) %>%
+  mutate(log_distance = log(Distance)) %>%
+  ggplot() + 
+  geom_point(aes(x = Order, y = log_distance)) +
+  geom_text(aes(x = Order, y = log_distance, label = Planet), hjust = 0, nudge_x = 0.09) + 
+  scale_x_discrete(breaks = seq(0,10,1)) + 
+  labs(x = "Planet Order", y = "ln(Distance from Sun)") + 
+  theme_classic()
+
+```
+
+##### D
+```{r}
+#D
+summary(planets$Distance)
+
+sd(planets$Distance)
+
+```
+
+##### E
+```{r}
+#E
+planets <- planets %>%
+  mutate(log_distance = log(Distance))
+
+summary(planets$log_distance)
+
+sd(planets$log_distance)
+```
+
+<br>
+
+The mean distance from the Sun is 110.07 with a standard deviation of 139.57. The mean of the natural log of the distance from the Sun is 3.71 with a standard deviation of 1.63. However, the distance from the Sun is scaled so that Earth is equal to 10, so these means and standard deviations may not be very informative. 
+
+<span style="color: magenta"> _1.16:_ Excellent analysis! You even have the planets labeled. I hadn't noted the scaling issue with the Earth's distance to the Sun being set at 10. **Supllemental Score: 2.5/5.** </span>
+
+***
+
+
+## 1.26b (Sleuth 2nd Edition)
+### Side-by-Side Boxplot
+```{r}
+library(aplpack)
+
+group_a <- c(1.31, 1.45, 1.12, 1.16, 1.30, 1.50, 1.20, 1.22, 1.42, 1.14, 1.23, 1.59, 
+             1.11, 1.10, 1.53, 1.52, 1.17, 1.49, 1.62, 1.29)
+  
+group_b <- c(1.13, 1.71, 1.39, 1.15, 1.33, 1.00, 1.03, 1.68, 1.76, 1.55, 1.34, 1.47, 
+             1.74, 1.74, 1.19, 1.15, 1.20, 1.59, 1.47, NA)
+
+rats <- do.call(rbind, Map(data.frame, group_a = group_a, group_b = group_b))
+
+rats <- rats %>%
+  pivot_longer(cols = c("group_a", "group_b"), 
+               names_to = "group", values_to = "zinc")
+
+rats %>%
+  ggplot() + 
+  geom_boxplot(aes(x = group, y = zinc)) + 
+  geom_jitter(aes(x = group, y = zinc), alpha = 0.4) + 
+  scale_x_discrete(labels = c("Calcium Supplement", "Control")) +  
+  labs(x = "Dietary Treatment", y = "Zinc Concentration (mg/ml)") +
+  theme_classic()
+  
+```
+
+
+### Side-by-Side Stem and Leaf Plot
+```{r}
+stem.leaf.backback(group_a, group_b, m = 1)
+```
+
+<br>
+
+The zinc concentrations (mg/ml) are slightly lower in the group that received the dietary supplement of calcium than the control group. The control group also had a greater variability (larger spread) in zinc concentrations than the calcium supplement group. 
+
+<span style="color: magenta"> _1.26:_ Excellent analysis (again)! Your boxplot was the best I've seen so far, especially with the jittered data. **Score: 2.5/ 2.5. Total supplemental 5/5** </span>
+<br>
+<br>
+<br>
+
