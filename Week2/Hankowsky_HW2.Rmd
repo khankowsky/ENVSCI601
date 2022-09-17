@@ -139,9 +139,23 @@ The variance between gender was about equal for each of the individual component
 #pulling the data from the 'Sleuth 3' package
 tuition <- Sleuth3::ex0332
 
+#transposing the data so it's in long format 
+tuition_long <- tuition %>%
+  pivot_longer(cols = c(InState, OutOfState), 
+               names_to = "State", 
+               values_to = "Tuition") 
+
 #creating a column with the difference of outofstate tuition minus instate tuition
+tuition_long <- tuition_long %>%
+  group_by(College) %>%
+  mutate(diff = Tuition - lag(Tuition))
+
 tuition <- tuition %>%
-  mutate(diff = OutOfState - InState)
+  mutate(diff = OutOfState - lag(Tuition))
+
+
+
+
 
 #transposing the data so it's in long format 
 tuition_long <- tuition %>%
@@ -241,21 +255,29 @@ tuition_long %>%
 tuition %>%
   filter(Type == "Public") %>%
   ggplot() +
+<<<<<<< HEAD
   geom_boxplot(aes(y = diff_of_logs)) + 
   labs(title = "Ln(Tuition Difference: Out-Of-State minus In-State) for Public Universities",
        y = "Ln(Difference in Out-Of-State and In-State Tution ($))",
        x = "50 Colleges") +
   theme_classic()
+=======
+  geom_boxplot(aes(y = log_diff))
+>>>>>>> 27ac60c11fa062924e4b18ca16d5042f3833d551
 
 #histogram of the difference in logged tuition
 tuition %>%
   filter(Type == "Public") %>%
   ggplot() +
+<<<<<<< HEAD
   geom_histogram(aes(x = diff_of_logs)) + 
   labs(title = "Ln(Tuition Difference: Out-Of-State minus In-State) for Public Universities",
        x = "Ln(Difference in Out-Of-State and In-State Tution ($))",
        y = "Count") +
   theme_classic()
+=======
+  geom_histogram(aes(x = log_diff))
+>>>>>>> 27ac60c11fa062924e4b18ca16d5042f3833d551
 
 
 
@@ -306,6 +328,10 @@ ggplot() +
 
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 27ac60c11fa062924e4b18ca16d5042f3833d551
 
 
 #boxplot of Ln(in-state tuition) by university type 
