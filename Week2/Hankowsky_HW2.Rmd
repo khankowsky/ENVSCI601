@@ -133,6 +133,8 @@ The variance between gender was about equal for each of the individual component
 ***
 
 ## 3.32
+
+#### A
 ```{r}
 #pulling the data from the 'Sleuth 3' package
 tuition <- Sleuth3::ex0332
@@ -141,173 +143,86 @@ tuition <- Sleuth3::ex0332
 tuition <- tuition %>%
   mutate(diff = OutOfState - InState)
 
+#transposing the data so it's in long format 
+tuition_long <- tuition %>%
+  pivot_longer(cols = c(InState, OutOfState), 
+               names_to = "State", 
+               values_to = "Tuition")  %>%
+  mutate(log_tuition = log(Tuition))
+
+
+#boxplot of in-state v out-of-state tuition for public universities
+tuition_long %>%
+  filter( Type == "Public") %>%
+  ggplot() + 
+  geom_boxplot(aes(x = State, y = Tuition, fill = State)) + 
+  scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
+  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
+  labs(title = "Boxplot of In-State vs Out-Of-State Tuition for Public Universities", 
+       x = "") + 
+  theme_classic()
+
+
+#histogram of in-state v out-of-state tuition for public universities
+tuition_long %>%
+  filter( Type == "Public") %>%
+  ggplot() + 
+  geom_histogram(data = tuition_long %>% 
+                   filter(State == "InState"), 
+                 aes(x = Tuition, y = ..density.., fill = State), color = "black") + 
+  geom_histogram(data = tuition_long %>% 
+                   filter(State == "OutOfState"), 
+                 aes(x = Tuition, y = -..density.., fill = State), color = "black") + 
+  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
+  labs(title = "Histogram of In-State vs Out-Of-State Tuition for Public Universities", 
+       y = "Density") +
+  theme_classic()
+
 #boxplot of the difference in tuitions
 tuition %>%
+  filter(Type == "Public") %>%
   ggplot() +
   geom_boxplot(aes(y = diff)) +
-  labs(title = "Tuition Difference: Out-Of-State minus In-State",
+  labs(title = "Tuition Difference: Out-Of-State minus In-State for Public Universities",
        y = "Difference in Out-Of-State and In-State Tution ($)",
        x = "50 Colleges") +
   theme_classic()
 
 #histogram of the difference in tuitions
 tuition %>%
+  filter(Type == "Public") %>%
   ggplot() +
   geom_histogram(aes(x = diff)) +
-  labs(title = "Tuition Difference: Out-Of-State minus In-State",
+  labs(title = "Tuition Difference: Out-Of-State minus In-State for Public Universities",
        x = "Difference in Out-Of-State and In-State Tution ($)",
        y = "Count") +
   theme_classic()
 
 
+#log transforming the data and looking at the difference of logs 
 tuition <- tuition %>%
   mutate(log_outofstate = log(OutOfState),
          log_instate = log(InState),
-         log_diff = log(diff), 
          diff_of_logs = log_outofstate - log_instate)
 
 
 
-tuition %>%
-  ggplot() +
-  geom_boxplot(aes(y = diff_of_logs))
-
-tuition %>%
-  ggplot() +
-  geom_histogram(aes(x = diff_of_logs))
-
-
-###############################################################################
-
-
-#t-test time
-#in/out of state tuition in public
-tuition_public_t <- tuition %>%
-  filter(Type == "Public")
-
-t1 <- t.test(log_outofstate, log_instate, data = tuition_public_t, paired = TRUE)
-t1
-
-#back transform estimate and CI
-exp(t1$est[1]) - exp(t1$est[2])
-exp(t1$conf.int)
-
-
-
-#public v private in state tuition
-tuition_instate_t <- tuition_long %>%
-  filter(State == "InState")
-
-t2 <- t.test(log_instate ~ Type, var.equal = TRUE, data = tuition_instate_t)
-t2
-
-#back transform estimate and CI
-exp(t2$est[1]) - exp(t2$est[2])
-exp(t2$conf.int)
-
-
-
-#public v private out of state tuition
-tuition_outstate_t <- tuition_long %>%
-  filter(State == "OutOfState")
-
-t3 <- t.test(log_outofstate ~ Type, var.equal = FALSE, data = tuition_outstate_t)
-t3
-
-#back transform estimate and CI
-exp(t3$est[1]) - exp(t3$est[2])
-exp(t3$conf.int)
-
-
-
-
-
-
-
-
-```
-
-```{r, eval = FALSE, include = FALSE}
-#ALL CODE I WROTE BEFORE I REALIZED THIS WAS A PAIRED T-TEST PROBLEM, 
-#COULDNT BRING MYSELF TO DELETE IT
-
-#transposing the data so it's in long format 
-tuition_long <- tuition %>%
-  pivot_longer(cols = c(InState, OutOfState), 
-               names_to = "State", 
-               values_to = "Tuition") 
-
-
-#boxplot of in-state v out-of-state tuition 
+#boxplot of in-state v out-of-state tuition for public universities
 tuition_long %>%
-  ggplot() + 
-  geom_boxplot(aes(x = State, y = Tuition, fill = State)) + 
-  scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
-  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
-  labs(title = "Boxplot of In-State vs Out-Of-State Tuition", 
-       x = "") + 
-  theme_classic()
-
-
-#histogram of in-state v out-of-state tuition 
-ggplot() + 
-  geom_histogram(data = tuition_long %>% 
-                   filter(State == "InState"), 
-                 aes(x = Tuition, y = ..density.., fill = State), color = "black") + 
-  geom_histogram(data = tuition_long %>% 
-                   filter(State == "OutOfState"), 
-                 aes(x = Tuition, y = -..density.., fill = State), color = "black") + 
-  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
-  labs(title = "Histogram of In-State vs Out-Of-State Tuition", 
-       y = "Density") +
-  theme_classic()
-
-
-#boxplot of in-state v out-of-state tuition by university type (public/private)
-tuition_long %>%
-  ggplot() + 
-  geom_boxplot(aes(x = State, y = Tuition, fill = Type)) + 
-  scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
-  scale_fill_discrete(name = "University\nType") +
-  labs(title = "Boxplot of In-State vs Out-Of-State Tuition by University Type", 
-       x = "") + 
-  theme_classic()
-
-
-
-#histogram of in-state v out-of-state tuition by university type (public/private)
-ggplot() + 
-  geom_histogram(data = tuition_long %>% 
-                   filter(State == "InState"), 
-                 aes(x = Tuition, y = ..density.., fill = State), color = "black") + 
-  geom_histogram(data = tuition_long %>% 
-                   filter(State == "OutOfState"), 
-                 aes(x = Tuition, y = -..density.., fill = State), color = "black") + 
-  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
-  labs(title = "Histogram of In-State vs Out-Of-State Tuition by University Type", 
-       y = "Density") + 
-  theme_classic() + 
-  facet_wrap(~Type)
-
-
-###############################################################################
-#transforming the data 
-tuition_long <- tuition_long %>%
-  mutate(log_tuition = log(Tuition))
-
-#boxplot of in-state v out-of-state tuition 
-tuition_long %>%
+  filter( Type == "Public") %>%
   ggplot() + 
   geom_boxplot(aes(x = State, y = log_tuition, fill = State)) + 
   scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
   scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
-  labs(title = "Boxplot of In-State vs Out-Of-State Ln(Tuition)", 
+  labs(title = "Boxplot of Ln(In-State vs Out-Of-State Tuition) for Public Universities", 
        x = "", y = "Ln(Tuition)") + 
   theme_classic()
 
 
-#histogram of in-state v out-of-state tuition 
-ggplot() + 
+#histogram of in-state v out-of-state tuition for public universities
+tuition_long %>%
+  filter( Type == "Public") %>%
+  ggplot() + 
   geom_histogram(data = tuition_long %>% 
                    filter(State == "InState"), 
                  aes(x = log_tuition, y = ..density.., fill = State), color = "black") + 
@@ -315,87 +230,187 @@ ggplot() +
                    filter(State == "OutOfState"), 
                  aes(x = log_tuition, y = -..density.., fill = State), color = "black") + 
   scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
-  labs(title = "Histogram of In-State vs Out-Of-State Ln(Tuition)", 
+  labs(title = "Histogram of Ln(In-State vs Out-Of-State Tuition) for Public Universities", 
        y = "Density", x = "Ln(Tuition)") +
   theme_classic()
 
 
-#boxplot of in-state v out-of-state tuition by university type (public/private)
-tuition_long %>%
-  ggplot() + 
-  geom_boxplot(aes(x = State, y = log_tuition, fill = Type)) + 
-  scale_x_discrete(labels = c("In-State", "Out-Of-State")) +
-  scale_fill_discrete(name = "University\nType") +
-  labs(title = "Boxplot of In-State vs Out-Of-State Ln(Tuition) by University Type", 
-       x = "", y = "Ln(Tuition)") + 
+
+
+#boxplot of the difference in logged tuition
+tuition %>%
+  filter(Type == "Public") %>%
+  ggplot() +
+  geom_boxplot(aes(y = diff_of_logs)) + 
+  labs(title = "Ln(Tuition Difference: Out-Of-State minus In-State) for Public Universities",
+       y = "Ln(Difference in Out-Of-State and In-State Tution ($))",
+       x = "50 Colleges") +
+  theme_classic()
+
+#histogram of the difference in logged tuition
+tuition %>%
+  filter(Type == "Public") %>%
+  ggplot() +
+  geom_histogram(aes(x = diff_of_logs)) + 
+  labs(title = "Ln(Tuition Difference: Out-Of-State minus In-State) for Public Universities",
+       x = "Ln(Difference in Out-Of-State and In-State Tution ($))",
+       y = "Count") +
   theme_classic()
 
 
 
-#histogram of in-state v out-of-state tuition by university type (public/private)
-ggplot() + 
-  geom_histogram(data = tuition_long %>% 
-                   filter(State == "InState"), 
-                 aes(x = log_tuition, y = ..density.., fill = State), color = "black") + 
-  geom_histogram(data = tuition_long %>% 
-                   filter(State == "OutOfState"), 
-                 aes(x = log_tuition, y = -..density.., fill = State), color = "black") + 
-  scale_fill_discrete(name = "", labels = c("In-State", "Out-Of-State")) +
-  labs(title = "Histogram of In-State vs Out-Of-State Ln(Tuition) by University Type", 
-       y = "Density", x = "Ln(Tuition)") + 
-  theme_classic() + 
-  facet_wrap(~Type)
 
-
-
-###############################################################################
-#t-test time 
+#t-test time
 #in/out of state tuition in public
 tuition_public_t <- tuition_long %>%
-  filter(Type == "Public")
+  filter(Type == "Public") %>%
+  mutate(State = as.factor(State))
 
-t1 <- t.test(log_tuition ~ State, var.equal = FALSE, data = tuition_public_t)
+t1 <- t.test(log_tuition ~ State, data = tuition_public_t, paired = TRUE)
 t1
 
 #back transform estimate and CI
-exp(t1$est[1]) - exp(t1$est[2])
+exp(t1$est[1])
 exp(t1$conf.int)
 
+```
+
+<br>
+
+The histograms for the data show that the in-state and out-of-state data for public universities are not normally distributed. However, because the data are paired, two observations (in-state/out-of-state tuition) from one study unit (university) the difference in tuition needs to be investigated. The difference in tuitions is not normally distributed and is not symmetric, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed, so the analysis was conducted with the log-transformed data. The The difference in tuitions is not normally distributed but the analysis was conducted anyway, because t-tests are robust to deviations from normality. These data provide substantial evidence that the mean difference between in-state and out-of-state tuitions in public universities in nonzero (two-sided p-value < 0.00001 from a paired paired t-test). The mean for in-state tuition for private universities was estimated to exceed the mean for in-state tuition for public universities by 0.44 dollars (95% confidence interval: 0.38 to 0.50 dollars).
 
 
+
+#### B 
+```{r}
+#boxplot of in-state tuition by university type 
+tuition %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Type, y = InState, fill = Type)) + 
+  labs(title = "Boxplot of In-State Tuition by University Type", 
+       x = "Univeristy Type", y = "In-State Tuition ($)") + 
+  theme_classic()
+
+
+#histogram of in-state tuition by university type 
+ggplot() + 
+  geom_histogram(data = tuition %>% 
+                   filter(Type == "Public"), 
+                 aes(x = InState, y = ..density.., fill = Type), color = "black") + 
+  geom_histogram(data = tuition %>% 
+                   filter(Type == "Private"), 
+                 aes(x = InState, y = -..density.., fill = Type), color = "black") + 
+  labs(title = "Histogram of In-State Tuition by University Type", 
+       y = "Density", x = "In-State Tuition ($)") +
+  theme_classic()
+
+
+
+
+
+#boxplot of Ln(in-state tuition) by university type 
+tuition %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Type, y = log_instate, fill = Type)) + 
+  labs(title = "Boxplot of Ln(In-State Tuition) by University Type", 
+       x = "Univeristy Type", y = "Ln(In-State Tuition ($))") + 
+  theme_classic()
+
+
+#histogram of Ln(in-state tuition) by university type 
+ggplot() + 
+  geom_histogram(data = tuition %>% 
+                   filter(Type == "Public"), 
+                 aes(x = log_instate, y = ..density.., fill = Type), color = "black") + 
+  geom_histogram(data = tuition %>% 
+                   filter(Type == "Private"), 
+                 aes(x = log_instate, y = -..density.., fill = Type), color = "black") + 
+  labs(title = "Histogram of Ln(In-State Tuition) by University Type", 
+       y = "Density", x = "Ln(In-State Tuition ($))") +
+  theme_classic()
+
+
+
+#t-test
 #public v private in state tuition 
-tuition_instate_t <- tuition_long %>%
-  filter(State == "InState")
-
-t2 <- t.test(log_tuition ~ Type, var.equal = TRUE, data = tuition_instate_t)
+t2 <- t.test(log_instate ~ Type, var.equal = FALSE, data = tuition)
 t2
 
 #back transform estimate and CI
 exp(t2$est[1]) - exp(t2$est[2])
 exp(t2$conf.int)
 
+```
+
+<br>
+
+The histograms show that the in-state tuition data are not normally distributed, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed, so the analysis was conducted with the log-transformed data. The variance for the public and private universities are not equal, so an unequal variance two sample t-test was used. These data provide strong evidence for a difference in in-state tuition between public and private universities (two-sided p-value < 0.00001 from an unequal variance two-sample t-test). The mean for in-state tuition for private universities was estimated to exceed the mean for in-state tuition for public universities by $18,199 (95% confidence interval: 2.90 to 4.70 dollars).
 
 
+#### C 
+```{r}
+#boxplot of out-of-state tuition by university type 
+tuition %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Type, y = OutOfState, fill = Type)) + 
+  labs(title = "Boxplot of Out-Of-State Tuition by University Type", 
+       x = "Univeristy Type", y = "Out-Of-State Tuition ($)") + 
+  theme_classic()
+
+
+#histogram of out-of-state tuition by university type 
+ggplot() + 
+  geom_histogram(data = tuition %>% 
+                   filter(Type == "Public"), 
+                 aes(x = OutOfState, y = ..density.., fill = Type), color = "black") + 
+  geom_histogram(data = tuition %>% 
+                   filter(Type == "Private"), 
+                 aes(x = OutOfState, y = -..density.., fill = Type), color = "black") + 
+  labs(title = "Histogram of Out-Of-State Tuition by University Type", 
+       y = "Density", x = "Out-Of-State Tuition ($)") +
+  theme_classic()
+
+
+
+
+
+#boxplot of Ln(out-of-state tuition) by university type 
+tuition %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Type, y = log_outofstate, fill = Type)) + 
+  labs(title = "Boxplot of Ln(Out-Of-State Tuition) by University Type", 
+       x = "Univeristy Type", y = "Ln(Out-Of-State Tuition ($))") + 
+  theme_classic()
+
+
+#histogram of Ln(out-of-state tuition) by university type 
+ggplot() + 
+  geom_histogram(data = tuition %>% 
+                   filter(Type == "Public"), 
+                 aes(x = log_outofstate, y = ..density.., fill = Type), color = "black") + 
+  geom_histogram(data = tuition %>% 
+                   filter(Type == "Private"), 
+                 aes(x = log_outofstate, y = -..density.., fill = Type), color = "black") + 
+  labs(title = "Histogram of Ln(Out-Of-State Tuition) by University Type", 
+       y = "Density", x = "Ln(Out-Of-State Tuition ($))") +
+  theme_classic()
+
+
+
+
+#t-test 
 #public v private out of state tuition 
-tuition_outstate_t <- tuition_long %>%
-  filter(State == "OutOfState")
-
-t3 <- t.test(log_tuition ~ Type, var.equal = FALSE, data = tuition_outstate_t)
+t3 <- t.test(log_outofstate ~ Type, var.equal = FALSE, data = tuition)
 t3
 
 #back transform estimate and CI
 exp(t3$est[1]) - exp(t3$est[2])
 exp(t3$conf.int)
-
-
 ```
 
+<br>
 
-These data provide overwhelming evidence for a difference in in-state and out-of-state tuition in public schools (two-sided p-value < 0.00001 from an unequal variance two-sample t-test). The mean for out-of-state tuition for public universities was $8,710 greater than the in-state tuition (95% confidence interval: 0.36 to 0.53 dollars). 
-
-
-
-
+The histograms show that the out-of-state tuition data are not normally distributed, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed, so the analysis was conducted with the log-transformed data. The variance for the public and private universities are not equal, so an unequal variance two sample t-test was used. These data provide strong evidence for a difference in out-of-state tuition between public and private universities (two-sided p-value < 0.001 from an unequal variance two-sample t-test). The mean for out-of-state tuition for private universities was estimated to exceed the mean for out-of-state tuition for public universities by $9,488 (95% confidence interval: 1.26 to 2.05 dollars).
 
 
 ***
@@ -429,7 +444,6 @@ ggplot() +
   geom_histogram(data = birds %>% 
                    filter(Status == "Perished"), 
                  aes(x = Weight, y = -..density.., fill = Status), color = "black") + 
-
   labs (title = "Histogram of Bird Weight and Survival", 
     x = "Weight (g)", y = "Density") + 
   theme_classic()
@@ -485,18 +499,63 @@ ggplot() +
   theme_classic()
 
 
+
+
+
+#log transforming the data and looking at the difference of logs 
+mice <- mice %>%
+  mutate(log_iron = log(Iron))
+
+
+#boxplot of Ln(iron retained) and supplement 
+mice %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Supplement, y = log_iron, fill = Supplement)) + 
+  scale_x_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
+  scale_fill_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
+  labs (title = "Boxplot of Ln(Percent Iron Retained) in Mice by Iron Supplement", 
+    x = "Iron Supplement", y = "Ln(Iron Retained (%))") + 
+  theme_classic()
+
+
+#histogram of Ln(iron retained) and supplement 
+ggplot() + 
+  geom_histogram(data = mice %>% 
+                   filter(Supplement == "Fe3"), 
+                 aes(x = log_iron, y = ..density.., fill = Supplement), color = "black") + 
+  geom_histogram(data = mice %>% 
+                   filter(Supplement == "Fe4"), 
+                 aes(x = log_iron, y = -..density.., fill = Supplement), color = "black") + 
+  scale_fill_discrete(labels = c(expression(Fe^"3+"), expression(Fe^"4+"))) +
+  labs (title = "Histogram of Ln(Percent Iron Retained) in Mice by Iron Supplement", 
+    x = "Ln(Iron Retained (%))", y = "Density") + 
+  theme_classic()
+
+
+
+
 #running the t-test to see if there is a difference in mouse percentage of iron retained by iron supplement type 
 #turning the survival variable into a factor
 mice_t <- mice %>%
   mutate(Supplement = as.factor(Supplement))
 
 #running the actual t-test
-t.test(Iron ~ Supplement, var.equal = FALSE, data = mice_t) 
+t1 <- t.test(log_iron ~ Supplement, var.equal = FALSE, data = mice_t)
+t1
+
+#back transform estimate and CI
+exp(t1$est[1]) - exp(t1$est[2])
+exp(t1$conf.int)
+
+
+
+
 ```
 
 <br>
 
-The variance for the two iron supplement groups are not equal, so an unequal variance two sample t-test was used. The histograms show that both iron supplement groups are relatively normally distributed. These data provide moderate evidence for a difference in percent iron retained based on the iron supplement type (two-sided p-value = 0.01 from an unequal variance two-sample t-test). The mean for the Fe4+ iron supplement was 2.24 percent greater than the mean for the Fe3+ iron supplement group (95% confidence interval: 0.57 to 3.90 %). 
+
+The histograms show that the iron supplement groups are not normally distributed, so a log-transformation was performed. The histograms of the log-transformed data show that they are normally distributed, so the analysis was conducted with the log-transformed data. The variance for the two iron supplement groups are not equal, so an unequal variance two sample t-test was used. These data provide moderate evidence for a difference in percent iron retained based on the iron supplement type (two-sided p-value = 0.0059 from an unequal variance two-sample t-test). The mean for the Fe4+ iron supplement was 2.17 percent greater than the mean for the Fe3+ iron supplement group (95% confidence interval: 0.42 to 0.85 %). 
 
 <br>
 <br>
