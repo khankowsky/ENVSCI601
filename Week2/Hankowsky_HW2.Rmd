@@ -545,7 +545,7 @@ t1
 
 #back transform estimate and CI
 exp(t1$est[2])/exp(t1$est[1])
-exp(t1$conf.int)
+exp(-t1$conf.int)
 
 
 
@@ -555,7 +555,7 @@ exp(t1$conf.int)
 <br>
 
 
-The histograms show that the iron supplement groups are not normally distributed, so a log-transformation was performed. The histograms of the log-transformed data show that they are normally distributed, so the analysis was conducted with the log-transformed data. The variance for the two iron supplement groups are not equal, so an unequal variance two sample t-test was used. These data provide moderate evidence for a difference in percent iron retained based on the iron supplement type (two-sided p-value = 0.0059 from an unequal variance two-sample t-test). The mean for the Fe4+ iron supplement was 1.68 percent greater than the mean for the Fe3+ iron supplement group (95% confidence interval: 0.42 to 0.85 %). 
+The histograms show that the iron supplement groups are not normally distributed, so a log-transformation was performed. The histograms of the log-transformed data show that they are normally distributed, so the analysis was conducted with the log-transformed data. The variance for the two iron supplement groups are not equal, so an unequal variance two sample t-test was used. These data provide moderate evidence for a difference in percent iron retained based on the iron supplement type (two-sided p-value = 0.0059 from an unequal variance two-sample t-test). The mean for the Fe4+ iron supplement was 1.68 percent greater than the mean for the Fe3+ iron supplement group (95% confidence interval: 1.17 to 2.41 %). 
 
 <br>
 <br>
