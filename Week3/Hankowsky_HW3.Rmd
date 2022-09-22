@@ -1,0 +1,109 @@
+---
+title: "Hankowsky_HW3"
+author: "Keith Hankowsky"
+date: '2022-09-22'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(Hmisc)
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+
+## 4.28
+```{r}
+#pulling the data from the 'Sleuth 3' package 
+seedling <- Sleuth3::ex0428
+
+#transposing the data so it is in long format
+seedling_long <- seedling %>%
+  pivot_longer(cols = c(Cross, Self), 
+               names_to = "Pollination", 
+               values_to = "Height") %>%
+  mutate(Pollinatio = as.factor(Pollination))
+
+#creating a new variable 
+seedling <- seedling %>%
+  mutate(diff = Cross - Self)
+
+```
+
+##### A
+```{r}
+#histogram of the difference in seedling height 
+seedling %>%
+  ggplot() +
+  geom_histogram(aes(x = diff)) +
+  labs(title = "Seedling Height Difference",
+       x = "Difference in Seedling Height",
+       y = "Count") +
+  theme_classic()
+```
+
+##### B 
+```{r}
+t1 <- t.test(Height ~ Pollination, data = seedling_long, paired = TRUE)
+t1
+```
+
+##### C 
+```{r}
+
+```
+
+##### D
+```{r}
+
+```
+
+##### E
+```{r}
+
+```
+
+
+
+
+##4.32
+```{r}
+cancer <- Sleuth3::ex0432
+
+
+
+```
+
+
+
+
+***
+
+# Supplemental Problems 
+
+## 4.30 (Sleuth 2nd Edition)
+```{r}
+#pulling the data from the 'Sleuth 2' package 
+spf <- Sleuth2::ex0430
+
+
+
+```
+
+
+## 4.31 (Sleuth 2nd Edition)
+```{r}
+#pulling the data from the 'Sleuth 2' package 
+cancer <- Sleuth2::ex0431
+
+
+
+```
+
+
+
+
