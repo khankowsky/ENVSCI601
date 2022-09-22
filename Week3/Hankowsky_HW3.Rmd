@@ -26,55 +26,138 @@ seedling_long <- seedling %>%
   pivot_longer(cols = c(Cross, Self), 
                names_to = "Pollination", 
                values_to = "Height") %>%
-  mutate(Pollinatio = as.factor(Pollination))
+  mutate(Pollination = as.factor(Pollination))
 
 #creating a new variable 
 seedling <- seedling %>%
   mutate(diff = Cross - Self)
 
-```
 
-##### A
-```{r}
+
+
+#boxplot of seedling height by pollination type
+seedling_long %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Pollination, y = Height, fill = Pollination)) + 
+  scale_x_discrete(labels = c("Cross-Pollinated", "Self-Fertilized")) +
+  scale_fill_discrete(name = "", labels = c("Cross-Pollinated", "Self-Fertilized")) +
+  labs(title = "Boxplot of Seedling Height by Pollintation Type", 
+       x = "", y = "Height (in.)") + 
+  theme_classic()
+
+
+#histogram of seedling height by pollination type
+seedling_long %>%
+  ggplot() + 
+  geom_histogram(data = seedling_long %>% 
+                   filter(Pollination == "Cross"), 
+                 aes(x = Height, y = ..density.., fill = Pollination), color = "black") + 
+  geom_histogram(data = seedling_long %>% 
+                   filter(Pollination == "Self"), 
+                 aes(x = Height, y = -..density.., fill = Pollination), color = "black") + 
+  scale_fill_discrete(name = "", labels = c("Cross-Pollinated", "Self-Fertilized")) +
+  labs(title = "Histogram of Seedling Height by Pollintation Type", 
+       y = "Density") +
+  theme_classic()
+
+
+#boxplot of the difference in seedling height 
+seedling %>%
+  ggplot() +
+  geom_boxplot(aes(y = diff)) + 
+  labs(title = "Boxplot of Seedling Height Difference",
+       y = "Difference in Seedling Height",
+       x = "Seedlings") + 
+  geom_hline(yintercept = 0, linetype = 2) + 
+  theme_classic() 
+
 #histogram of the difference in seedling height 
 seedling %>%
   ggplot() +
   geom_histogram(aes(x = diff)) +
-  labs(title = "Seedling Height Difference",
+  labs(title = "Histogram of Seedling Height Difference",
        x = "Difference in Seedling Height",
        y = "Count") +
   theme_classic()
-```
 
-##### B 
-```{r}
-t1 <- t.test(Height ~ Pollination, data = seedling_long, paired = TRUE)
-t1
-```
 
-##### C 
-```{r}
+#running the paired t-test
+t.test(Height ~ Pollination, data = seedling_long, paired = TRUE)
+
+
+#running the Wilcoxon Signed-Rank Test
+wilcox.test(Height ~ Pollination, data = seedling_long, paired = TRUE) 
 
 ```
 
-##### D
-```{r}
-
-```
-
-##### E
-```{r}
-
-```
 
 
 
 
 ##4.32
 ```{r}
+#pulling the data from the 'Sleuth 3' package 
 cancer <- Sleuth3::ex0432
 
+#transposing the data so it is in long format
+cancer_long <- cancer %>%
+  pivot_longer(cols = c(Marijuana, Placebo), 
+               names_to = "Treatment", 
+               values_to = "Episodes") %>%
+  mutate(Treatment = as.factor(Treatment))
 
+
+#boxplot of vomiting and retching episodes by treatment type
+cancer_long %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Treatment, y = Episodes, fill = Treatment)) + 
+  labs(title = "Boxplot of vomiting and retching episodes by treatment type", 
+       x = "") + 
+  theme_classic()
+
+
+#histogram of vomiting and retching episodes by treatment type
+cancer_long %>%
+  ggplot() + 
+  geom_histogram(data = cancer_long %>% 
+                   filter(Treatment == "Marijuana"), 
+                 aes(x = Episodes, y = ..density.., fill = Treatment), color = "black") + 
+  geom_histogram(data = cancer_long %>% 
+                   filter(Treatment == "Placebo"), 
+                 aes(x = Episodes, y = -..density.., fill = Treatment), color = "black") + 
+  labs(title = "Histogram of vomiting and retching episodes by treatment type", 
+       y = "Density") +
+  theme_classic()
+
+
+#creating a new variable looking at the difference of vomiting and retching episodes by treatment type
+cancer <- cancer %>%
+  mutate(diff = Marijuana - Placebo)
+
+
+#boxplot of the difference in vomiting and retching episodes 
+cancer %>%
+  ggplot() +
+  geom_boxplot(aes(y = diff)) + 
+  labs(title = "Boxplot of the Difference in Vomiting and Retching Episodes",
+       y = "Difference in Vomiting and Retching Episodes",
+       x = "") + 
+  geom_hline(yintercept = 0, linetype = 2) + 
+  theme_classic() 
+
+#histogram of the difference in vomiting and retching episodes
+cancer %>%
+  ggplot() +
+  geom_histogram(aes(x = diff)) +
+  labs(title = "Histogram of the Difference in Vomiting and Retching Episodes",
+       x = "Difference in Vomiting and Retching Episodes",
+       y = "Count") +
+  theme_classic()
+
+
+#running the Wilcoxon Signed-Rank Test
+wilcox.test(Episodes ~ Treatment, data = cancer_long, paired = TRUE, exact = TRUE, 
+            conf.int=TRUE) 
 
 ```
 
@@ -92,15 +175,42 @@ spf <- Sleuth2::ex0430
 
 
 
+
 ```
 
 
 ## 4.31 (Sleuth 2nd Edition)
 ```{r}
 #pulling the data from the 'Sleuth 2' package 
-cancer <- Sleuth2::ex0431
+cancer2 <- Sleuth2::ex0431
 
 
+#boxplot of survival by therapy treatment type
+cancer2 %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Group, y = Survival, fill = Group)) + 
+  labs(title = "Boxplot of survival by therapy treatment type", 
+       x = "", y = "Months of Survival") + 
+  theme_classic()
+
+
+#histogram of survival by therapy treatment type
+cancer2 %>%
+  ggplot() + 
+  geom_histogram(data = cancer2 %>% 
+                   filter(Group == "Therapy"), 
+                 aes(x = Survival, y = ..density.., fill = Group), color = "black") + 
+  geom_histogram(data = cancer2 %>% 
+                   filter(Group == "Control"), 
+                 aes(x = Survival, y = -..density.., fill = Group), color = "black") + 
+  labs(title = "Histogram of survival by therapy treatment type", 
+       y = "Density", x = "Months of Survival") +
+  theme_classic()
+
+
+#running the Wilcoxon Rank-Sum Test
+wilcox.test(Survival ~ Group, data = cancer2, correct = TRUE, 
+            alternative = "two.sided", conf.int=TRUE) 
 
 ```
 
