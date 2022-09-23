@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 library(Sleuth3)
 library(tidyverse)
-library(Hmisc)
+library(asht)
 ```
 
 Hankowsky Homework Solutions 
@@ -33,6 +33,7 @@ seedling <- seedling %>%
   mutate(diff = Cross - Self)
 
 
+###############################################################################
 
 
 #boxplot of seedling height by pollination type
@@ -61,6 +62,9 @@ seedling_long %>%
   theme_classic()
 
 
+###############################################################################
+
+
 #boxplot of the difference in seedling height 
 seedling %>%
   ggplot() +
@@ -81,6 +85,9 @@ seedling %>%
   theme_classic()
 
 
+###############################################################################
+
+
 #running the paired t-test
 t.test(Height ~ Pollination, data = seedling_long, paired = TRUE)
 
@@ -88,13 +95,20 @@ t.test(Height ~ Pollination, data = seedling_long, paired = TRUE)
 #running the Wilcoxon Signed-Rank Test
 wilcox.test(Height ~ Pollination, data = seedling_long, paired = TRUE) 
 
+#running the Wilcoxon Signed-Rank Test from the {asht} package
+wsrTest(seedling$Cross, seedling$Self)
+
+
+
 ```
 
+The histograms show that the cross-pollinated and self-fertilized data for the seedlings are not normally distributed. However, because the data are paired, two observations (cross-pollinated/self-fertilized) from one study unit (seedling) the difference in seedling height needs to be investigated. The difference in seedling height is not normally distributed but is relatively symmetric, so a non-parametric alternative to a t-test can be preformed. There is suggestive but inconclusive evidence that the difference between cross-pollinated and self-fertilized seedling height is nonzero (two-sided p-value 0.041 from a paired Wilcoxon Signed-Rank Test). The cross-pollinated seedlings have a median height 3.14 inches greater than the median for self-fertilized seedlings (95% confidence interval: 0.50 to 5.20 inches). 
 
 
+***
 
 
-##4.32
+## 4.32
 ```{r}
 #pulling the data from the 'Sleuth 3' package 
 cancer <- Sleuth3::ex0432
@@ -104,7 +118,8 @@ cancer_long <- cancer %>%
   pivot_longer(cols = c(Marijuana, Placebo), 
                names_to = "Treatment", 
                values_to = "Episodes") %>%
-  mutate(Treatment = as.factor(Treatment))
+  mutate(Treatment = as.factor(Treatment), 
+         log_episodes = log(Episodes + 1))
 
 
 #boxplot of vomiting and retching episodes by treatment type
@@ -130,9 +145,12 @@ cancer_long %>%
   theme_classic()
 
 
+###############################################################################
+
+
 #creating a new variable looking at the difference of vomiting and retching episodes by treatment type
 cancer <- cancer %>%
-  mutate(diff = Marijuana - Placebo)
+  mutate(diff = Placebo - Marijuana)
 
 
 #boxplot of the difference in vomiting and retching episodes 
@@ -155,13 +173,51 @@ cancer %>%
   theme_classic()
 
 
-#running the Wilcoxon Signed-Rank Test
-wilcox.test(Episodes ~ Treatment, data = cancer_long, paired = TRUE, exact = TRUE, 
-            conf.int=TRUE) 
+###############################################################################
 
+
+#logging the variables of interest and then looking at the difference
+cancer <- cancer %>%
+  mutate(log_marijuana = log(Marijuana + 1), 
+         log_placebo = log(Placebo + 1), 
+         diff_of_logs = log_placebo - log_marijuana)
+
+
+#boxplot of the difference in vomiting and retching episodes 
+cancer %>%
+  ggplot() +
+  geom_boxplot(aes(y = diff_of_logs)) + 
+  labs(title = "Boxplot of the Ln(Difference in Vomiting and Retching Episodes) ",
+       y = "Ln(Difference in Vomiting and Retching Episodes)",
+       x = "") + 
+  geom_hline(yintercept = 0, linetype = 2) + 
+  theme_classic() 
+
+#histogram of the difference in vomiting and retching episodes
+cancer %>%
+  ggplot() +
+  geom_histogram(aes(x = diff_of_logs)) +
+  labs(title = "Histogram of the Ln(Difference in Vomiting and Retching Episodes)",
+       x = "Ln(Difference in Vomiting and Retching Episodes)",
+       y = "Count") +
+  theme_classic()
+
+
+
+
+#running the Wilcoxon Signed-Rank Test
+wilcox.test(log_episodes ~ Treatment, data = cancer_long, paired = TRUE) 
+
+
+#running the Wilcoxon Signed-Rank Test from the {asht} package
+t2 <- wsrTest(cancer$log_placebo, cancer$log_marijuana)
+t2
+
+(exp(t2$est[1])) - 1
+(exp(t2$conf.int)) - 1
 ```
 
-
+The histograms show that the placebo and marijuana data for the cancer patients are not normally distributed. However, because the data are paired, two observations (placebo/marijuana) from one study unit (cancer patient) the difference in vomiting and retching episodes needs to be investigated. The difference in vomiting and retching episodes is not normally distributed and is not symmetric, so a log-transformation was preformed. The histograms of the log-transformed data show that they are relatively symmetric, so the analysis was conducted with the log-transformed data.There is overwhelming evidence that the difference between the placebo and marijuana treatments in cancer patients is nonzero (two-sided p-value < 0.001 from a paired Wilcoxon Signed-Rank Test). The marijuana treatment has a median number of vomiting and retching episodes 4.23 times less than the median for placebo treatment (95% confidence interval: 1.53 to 11.24). 
 
 
 ***
@@ -173,10 +229,108 @@ wilcox.test(Episodes ~ Treatment, data = cancer_long, paired = TRUE, exact = TRU
 #pulling the data from the 'Sleuth 2' package 
 spf <- Sleuth2::ex0430
 
+#transforming the data so it's in long form
+spf_long <- spf %>%
+  pivot_longer(cols = c(Control, Sunscreen), 
+               names_to = "Treatment", 
+               values_to = "Minutes")
 
+#boxplot of vomiting and retching episodes by treatment type
+spf_long %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Treatment, y = Minutes, fill = Treatment)) + 
+  labs(title = "Boxplot of Tolerance to Sunlight by Treatment Type", 
+       x = "") + 
+  theme_classic()
+
+
+#histogram of vomiting and retching episodes by treatment type
+spf_long %>%
+  ggplot() + 
+  geom_histogram(data = spf_long %>% 
+                   filter(Treatment == "Control"), 
+                 aes(x = Minutes, y = ..density.., fill = Treatment), color = "black") + 
+  geom_histogram(data = spf_long %>% 
+                   filter(Treatment == "Sunscreen"), 
+                 aes(x = Minutes, y = -..density.., fill = Treatment), color = "black") + 
+  labs(title = "Histogram of Tolerance to Sunlight by Treatment Type", 
+       y = "Density") +
+  theme_classic()
+
+
+###############################################################################
+
+
+#creating a new variable looking at the difference of vomiting and retching episodes by treatment type
+spf <- spf %>%
+  mutate(diff = Sunscreen - Control)
+
+
+#boxplot of the difference in vomiting and retching episodes 
+spf %>%
+  ggplot() +
+  geom_boxplot(aes(y = diff)) + 
+  labs(title = "Boxplot of the Difference in Tolerance to Sunlight",
+       y = "Difference in Tolerance to Sunlight",
+       x = "") + 
+  geom_hline(yintercept = 0, linetype = 2) + 
+  theme_classic() 
+
+#histogram of the difference in vomiting and retching episodes
+spf %>%
+  ggplot() +
+  geom_histogram(aes(x = diff)) +
+  labs(title = "Histogram of the Difference in Tolerance to Sunlight",
+       x = "Difference in Tolerance to Sunlight",
+       y = "Count") +
+  theme_classic()
+
+
+###############################################################################
+
+
+#logging the variables of interest and then looking at the difference
+spf <- spf %>%
+  mutate(log_control = log(Control + 1), 
+         log_sunscreen = log(Sunscreen + 1), 
+         diff_of_logs = log_sunscreen - log_control)
+
+
+#boxplot of the difference in vomiting and retching episodes 
+spf %>%
+  ggplot() +
+  geom_boxplot(aes(y = diff_of_logs)) + 
+  labs(title = "Boxplot of the Ln(Difference in Tolerance to Sunlight) ",
+       y = "Ln(Difference in Tolerance to Sunlight)",
+       x = "") + 
+  geom_hline(yintercept = 0, linetype = 2) + 
+  theme_classic() 
+
+#histogram of the difference in vomiting and retching episodes
+spf %>%
+  ggplot() +
+  geom_histogram(aes(x = diff_of_logs)) +
+  labs(title = "Histogram of the Ln(Difference in Tolerance to Sunlight)",
+       x = "Ln(Difference in Tolerance to Sunlight)",
+       y = "Count") +
+  theme_classic()
+
+
+###############################################################################
+
+
+#running the Wilcoxon Signed-Rank Test from the {asht} package
+t3 <- wsrTest(spf$log_sunscreen, spf$log_control)
+t3
+
+(exp(t3$est[1]))
+(exp(t3$conf.int))
 
 
 ```
+The histograms show that the control and sunscreen data for the sunlight protection factor are not normally distributed. However, because the data are paired, two observations (control/sunscreen) from one study unit (patient) the difference tolerance to sunlight needs to be investigated. The difference in tolerance to sunlight is not normally distributed but it is relatively symmetric, however, because the analysis of the sunlight protection factor is interested in a ratio, a log-transformation was performed. The histograms of the log-transformed data show that they are relatively symmetric, so the analysis was conducted with the log-transformed data. There is overwhelming evidence that the difference between the control and sunscreen treatments in the patients is nonzero (two-sided p-value < 0.001 from a paired Wilcoxon Signed-Rank Test). The sunscreen treatment has a median tolerance to sunlight 7.10 times greater that of the median for control treatment (95% confidence interval: 4.52 to 11.63). 
+
+***
 
 
 ## 4.31 (Sleuth 2nd Edition)
@@ -208,12 +362,67 @@ cancer2 %>%
   theme_classic()
 
 
+###############################################################################
+
+#log transforming the data 
+cancer2 <- cancer2 %>%
+  mutate(log_survival = log(Survival + 1))
+
+#boxplot of ln(survival) by therapy treatment type
+cancer2 %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Group, y = log_survival, fill = Group)) + 
+  labs(title = "Boxplot of Ln(survival) by therapy treatment type", 
+       x = "", y = "Ln(Months of Survival)") + 
+  theme_classic()
+
+
+#histogram of ln(survival) by therapy treatment type
+cancer2 %>%
+  ggplot() + 
+  geom_histogram(data = cancer2 %>% 
+                   filter(Group == "Therapy"), 
+                 aes(x = log_survival, y = ..density.., fill = Group), color = "black") + 
+  geom_histogram(data = cancer2 %>% 
+                   filter(Group == "Control"), 
+                 aes(x = log_survival, y = -..density.., fill = Group), color = "black") + 
+  labs(title = "Histogram of ln(survival) by therapy treatment type", 
+       y = "Density", x = "Ln(Months of Survival)") +
+  theme_classic()
+
+
+###############################################################################
+
+
+
 #running the Wilcoxon Rank-Sum Test
-wilcox.test(Survival ~ Group, data = cancer2, correct = TRUE, 
+wilcox.test(log_survival ~ Group, data = cancer2, correct = TRUE, 
             alternative = "two.sided", conf.int=TRUE) 
+
+
+
+#changing the dataframe structure so it can run in the asht package 
+cancer2 <- cancer2 %>%
+  group_by(Group) %>% 
+  mutate(grouped_id = row_number())
+cancer2_wide <- cancer2 %>%
+  select(-c(Survival, Censor)) %>%
+  spread(Group, log_survival) %>%
+  select(-grouped_id)
+  
+
+#running the Wilcoxon Rank-Sum Test from asht package
+t4 <- wmwTest(cancer2_wide$Control, cancer2_wide$Therapy, correct = TRUE)
+t4
+
+(exp(t4$est[1])) - 1
+(exp(t4$conf.int)) - 1
 
 ```
 
+The histograms for the data show that the control and therapy groups are not normally distributed. The histograms also show that the data do not have equal spread, so a log-transformation was performed. The histograms of the log-transformed data show a relatively equal spread, so a Wilcoxon Rank-Sum Test was conducted. These data provide no evidence for a difference in survival based on the group therapy treatment (two-sided p-value = 0.265 from a Wilcoxon Rank-Sum Test with continuity correction). However, the group therapy had a survival time 0.80 times greater than the control group (95% confidence interval: 0.55 to 1.06).
 
+<br>
+<br>
 
 
