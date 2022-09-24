@@ -2,7 +2,8 @@
 title: "Hankowsky_HW3"
 author: "Keith Hankowsky"
 date: '2022-09-22'
-output: html_document
+output:
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -58,7 +59,7 @@ seedling_long %>%
                  aes(x = Height, y = -..density.., fill = Pollination), color = "black") + 
   scale_fill_discrete(name = "", labels = c("Cross-Pollinated", "Self-Fertilized")) +
   labs(title = "Histogram of Seedling Height by Pollintation Type", 
-       y = "Density") +
+       y = "Density", x = "Height (in.)") +
   theme_classic()
 
 
@@ -71,7 +72,7 @@ seedling %>%
   geom_boxplot(aes(y = diff)) + 
   labs(title = "Boxplot of Seedling Height Difference",
        y = "Difference in Seedling Height",
-       x = "Seedlings") + 
+       x = "") + 
   geom_hline(yintercept = 0, linetype = 2) + 
   theme_classic() 
 
@@ -102,7 +103,7 @@ wsrTest(seedling$Cross, seedling$Self)
 
 ```
 
-The histograms show that the cross-pollinated and self-fertilized data for the seedlings are not normally distributed. However, because the data are paired, two observations (cross-pollinated/self-fertilized) from one study unit (seedling) the difference in seedling height needs to be investigated. The difference in seedling height is not normally distributed but is relatively symmetric, so a non-parametric alternative to a t-test can be preformed. There is suggestive but inconclusive evidence that the difference between cross-pollinated and self-fertilized seedling height is nonzero (two-sided p-value 0.041 from a paired Wilcoxon Signed-Rank Test). The cross-pollinated seedlings have a median height 3.14 inches greater than the median for self-fertilized seedlings (95% confidence interval: 0.50 to 5.20 inches). 
+The histograms show that the cross-pollinated and self-fertilized data for the seedlings are not normally distributed. However, because the data are paired, two observations (cross-pollinated/self-fertilized) from one study unit (seedling) the difference in seedling height needs to be investigated. The difference in seedling height is not normally distributed but is relatively symmetric, so a non-parametric alternative to a t-test can be preformed. There is suggestive but inconclusive evidence that the difference between cross-pollinated and self-fertilized seedling height is nonzero (two-sided p-value 0.041 from a paired Wilcoxon Signed-Rank Test). The cross-pollinated seedlings have a median height 3.14 inches greater than the median height for self-fertilized seedlings (95% confidence interval: 0.50 to 5.20 inches). 
 
 
 ***
@@ -126,7 +127,7 @@ cancer_long <- cancer %>%
 cancer_long %>%
   ggplot() + 
   geom_boxplot(aes(x = Treatment, y = Episodes, fill = Treatment)) + 
-  labs(title = "Boxplot of vomiting and retching episodes by treatment type", 
+  labs(title = "Boxplot of Vomiting and Retching Episodes by Treatment Type", 
        x = "") + 
   theme_classic()
 
@@ -140,7 +141,7 @@ cancer_long %>%
   geom_histogram(data = cancer_long %>% 
                    filter(Treatment == "Placebo"), 
                  aes(x = Episodes, y = -..density.., fill = Treatment), color = "black") + 
-  labs(title = "Histogram of vomiting and retching episodes by treatment type", 
+  labs(title = "Histogram of Vomiting and Retching Episodes by Treatment Type", 
        y = "Density") +
   theme_classic()
 
@@ -328,7 +329,7 @@ t3
 
 
 ```
-The histograms show that the control and sunscreen data for the sunlight protection factor are not normally distributed. However, because the data are paired, two observations (control/sunscreen) from one study unit (patient) the difference tolerance to sunlight needs to be investigated. The difference in tolerance to sunlight is not normally distributed but it is relatively symmetric, however, because the analysis of the sunlight protection factor is interested in a ratio, a log-transformation was performed. The histograms of the log-transformed data show that they are relatively symmetric, so the analysis was conducted with the log-transformed data. There is overwhelming evidence that the difference between the control and sunscreen treatments in the patients is nonzero (two-sided p-value < 0.001 from a paired Wilcoxon Signed-Rank Test). The sunscreen treatment has a median tolerance to sunlight 7.10 times greater that of the median for control treatment (95% confidence interval: 4.52 to 11.63). 
+The histograms show that the control and sunscreen data for the sunlight protection factor are not normally distributed. However, because the data are paired, two observations (control/sunscreen) from one study unit (patient) the difference in tolerance to sunlight needs to be investigated. The difference in tolerance to sunlight is not normally distributed but it is relatively symmetric, however, because the analysis of the sunlight protection factor is interested in a ratio, a log-transformation was performed. The histograms of the log-transformed data show that they are relatively symmetric, so the analysis was conducted with the log-transformed data. There is overwhelming evidence that the difference between the control and sunscreen treatments in the patients is nonzero (two-sided p-value < 0.001 from a paired Wilcoxon Signed-Rank Test). The sunscreen treatment has a median tolerance to sunlight 7.10 times greater that of the median for control treatment (95% confidence interval: 4.52 to 11.63). 
 
 ***
 
@@ -343,7 +344,7 @@ cancer2 <- Sleuth2::ex0431
 cancer2 %>%
   ggplot() + 
   geom_boxplot(aes(x = Group, y = Survival, fill = Group)) + 
-  labs(title = "Boxplot of survival by therapy treatment type", 
+  labs(title = "Boxplot of Survival by Therapy Treatment Type", 
        x = "", y = "Months of Survival") + 
   theme_classic()
 
@@ -357,7 +358,7 @@ cancer2 %>%
   geom_histogram(data = cancer2 %>% 
                    filter(Group == "Control"), 
                  aes(x = Survival, y = -..density.., fill = Group), color = "black") + 
-  labs(title = "Histogram of survival by therapy treatment type", 
+  labs(title = "Histogram of Survival by Therapy Treatment Type", 
        y = "Density", x = "Months of Survival") +
   theme_classic()
 
@@ -372,7 +373,7 @@ cancer2 <- cancer2 %>%
 cancer2 %>%
   ggplot() + 
   geom_boxplot(aes(x = Group, y = log_survival, fill = Group)) + 
-  labs(title = "Boxplot of Ln(survival) by therapy treatment type", 
+  labs(title = "Boxplot of Ln(Survival) by Therapy Treatment Type", 
        x = "", y = "Ln(Months of Survival)") + 
   theme_classic()
 
@@ -386,7 +387,7 @@ cancer2 %>%
   geom_histogram(data = cancer2 %>% 
                    filter(Group == "Control"), 
                  aes(x = log_survival, y = -..density.., fill = Group), color = "black") + 
-  labs(title = "Histogram of ln(survival) by therapy treatment type", 
+  labs(title = "Histogram of ln(Survival) by Therapy Treatment Type", 
        y = "Density", x = "Ln(Months of Survival)") +
   theme_classic()
 
