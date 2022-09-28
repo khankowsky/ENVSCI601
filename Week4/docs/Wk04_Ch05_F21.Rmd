@@ -1,0 +1,778 @@
+---
+title: "Week 4: Sleuth Chapter 4"
+author: "Eugene D. Gallagher"
+date: "9/28/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(BHH2)
+library(car)  # used only for boxplot labeling outliers
+library(MASS)
+library(mosaic)  # from Horton's mosaic project
+library(multcomp)
+library (mvtnorm)
+library(Sleuth3)
+library (survival)
+library(TH.data)
+```
+
+# Homework Solutions (5:30 PM - 6:00 PM)
+
+## Basic 4.30 Sunlight Protection Factor
+
+### Rebecca Jenkins
+
+### Annie O'Connell
+
+## Basic 4.31 Effect of Group Therapy on Survival of Breast Cancer Patients
+
+### Jaxon Horn3e
+
+## Supplemental 4.19 Bumpus's Study
+
+### Jacob Levenson
+
+## Supplemental 4.29 Salvage Logging
+
+### Volunteers for next week?
+
+## Master Problem Exact Permutation Test of Sleuth Case 4.1.1 Challenger Data 
+
+### Yibiao Liang
+
+***
+
+# Outline of Class 3 on Sleuth Chapter 5 Comparisons Among Several Samples
+
+* Fisher's contributions
+
+* Major types of ANOVA
+
+* Steps in doing ANOVA
+
+* Case Study 5.1 Diet Restriction & Longevity
+
+  + 5 a priori hypotheses
+  
+  + boxplots indicate no problem with heteroscedasticity
+  
+  + Statistical summary & evaluation of the 5 hypotheses
+  
+  + Graphical ANOVA
+  
+* Case Study 5.2: The Spock trial; 
+  
+  + boxplots indicate no problem with heteroscedasticity
+  
+  + Statistical Summary
+  
+  + Graphical ANOVA
+  
+* Comparing 2 means with the pooled estimate of the sd
+
+ + Testing a priori hypotheses with t statistic with pooled sd from error mean square
+ 
+ + ANOVA can be performed given just means and variances
+ 
+ + Extra sum of squares F test
+ 
+ + The F distribution
+
+* The ANOVA table
+
+  + Fixed effects ANOVA
+   
+  + nested ANOVA table
+  
+  + Type II & Type III sums of squares
+  
+  + ANOVA Models I, II, and III
+  
+* Linear contrasts
+
+* Random vs. Fixed Effects
+
+* ANOVA assumptions
+
+  + Analyzing residuals for violations of ANOVA assumptions
+  
+* Kruskal-Wallis nonparametric ANOVA
+
+* Interpreting Confidence Limits
+
+* Statistical vs. Scientific significance
+
+  + Type II error and the precautionary principle
+  
+* Spock Judge vs. the others: Fixed or Random Effect?
+
+* Conclusions 
+
+***
+
+# R. A. Fisher, Inventor of ANOVA
+
+![R. A. Fisher, Inventor of ANOVA](..\images\FisherANOVAinventor.jpg)
+## 25 terms invented by Fisher (courtesy of HA David & David Bee (AP Stat group)
+
+variance 1918a; analysis of variance 1918b; likelihood 1921; maximum likelihood 1922a; parameter 1922a; statistic 1922a; consistency 1922a; efficiency 1922a; sufficiency 1922a; degrees of freedom 1922b; Student’s t, t 1924; z-distribution 1924; test of significance 1925a; level of significance 1925a; sufficient statistic 1925b; randomization 1926; randomized blocks 1926; confounding 1926; interaction 1926; sampling distribution 1928; covariance 1930; Greco-Latin square (with F. Yates) 1934; null hypothesis 1935; Yates’s correction for continuity 1936; normal score (with F. Yates) 1938
+
+## Most experimental & survey design is based on an ANOVA framework
+
+* One can’t really appreciate the need for proper replication without considering the implications for testing treatment effects with ANOVA
+
+* Hurlbert’s (1984) monograph criticizing statistics in ecological papers is largely a criticism of inappropriate ANOVA design
+
+  + Hurlbert’s pseudoreplication is Tony Underwood’s ‘model misspecification’ and both are largely based on using an inappropriate ANOVA model
+
+* While ANOVA is a proper subset of the general linear model (GLM) and regression, as we’ll see, the concepts involving design and partitioning degrees of freedom are more evident in ANOVA models
+
+![Ehinger's partition of statistical methods](..\images\EhingerLMs.jpg)
+
+***
+
+![image source: Dani Servén Marín (one of the developers of pyGAM)](..\images\HarvardGAMs.jpg)
+
+***
+
+# Major types of ANOVA (there are many more)
+
+* One-factor or one-way ANOVA
+
+  + 1 factor with 2 or more levels
+  
+  + If there is just 1 factor with just 2 levels, ANOVA is identical to an independent samples Student’s t test
+
+* Randomized block ANOVA
+
+  + Similar to factorial ANOVA. The block effect is designed to reduce the contribution of the blocked factor to the error variance producing a more powerful test of the main factors (Sleuth Case Study 13.1)
+  + However, interactions between blocks and treatments can be important
+  + If there are replicate blocks, the block x treatment interaction can be formally assessed
+  + If no replicates, Tukey’s test for additivity can be used to test for interactions (not covered in Sleuth) 
+  
+* Factorial ANOVA
+
+  + 2 or more factors with 2 or more levels of each factor
+  
+  + 2^4^ factorial: 4 factors, each with two levels
+  
+  + Can assess the interactions among variables, for example salinity and temperature effects on marine animal growth
+  
+* Split-plot ANOVA
+
+  + Full replication of factors isn’t possible, so factors divided into whole plots and subplots
+
+  + Experiments in greenhouses or fields; large wafers used  to print integrated circuits
+  
+* Nested or hierarchical ANOVA
+
+  + cores within quadrats, replicate quadrats within treatments, fish within aquaria
+  
+  + What is the experimental unit?  It’s the smallest unit to which a treatment can be applied
+  
+  + For example, for fish within aquaria in an experiment on ocean acidity , the experimental units on which degrees of freedom are alloted are the aquaria not the fish
+  
+* Mixed model ANOVA: random and fixed factors, often with nested factors
+
+  + R’s lme4 & lme
+  
+* Repeated measures ANOVA
+
+  + Repeated sampling of the same plots or individuals
+  
+  + Now handled as longitudinal models, usually as a type of mixed model
+  
+  + R's lme4 & lme
+ 
+***
+
+# Steps in doing an ANOVA-based experiment or survey
+
+* Design the experiment or survey after identifying the hypotheses and describe statistical tests BEFORE collecting data (a priori vs . a posteriori hypotheses)
+
+* Do a pre-test or preliminary survey
+
+  + If the variance is unknown, consider doing a preliminary experiment to calculate power for the full analysis
+  
+  + Also, a pre-test will allow covariates and problems to be identified
+  
+* Endeavor to create balanced designs with equal number of replicates at each combination of treatment and block levels
+
+  + ANOVA is robust to heteroscedasticity (unequal spread) if the design is balanced, i.e., equal number of cases per group (Winer et al. 1991)
+
+* Decide whether your factors are fixed or random
+
+  + ANOVA tests for difference in means (fixed effect) or whether σ^2^= 0 (random effect) or both (mixed model ANOVA)
+  
+  + The choice of fixed vs. random effects is often crucial and depends on whether the factor levels represent a random or representative sample
+from some larger statistical population
+
+  + The F statistics, the interpretation of the results, and the extent of statistical inference often change markedly depending on whether factors are fixed or random
+  
+* Avoid pseudoreplication (Hurlbert 1984)
+
+  + Pseudoreplication only occurs after an incorrect analysis has been presented: no analysis, no pseudoreplication
+  
+  + Pseudoreplication has two causes: inadequate replication at the design stage, or using an inappropriate model especially the wrong ANOVA model
+with an inappropriate error mean square and error d.f.
+
+  + Examples of model misspecification
+  
+  1. Failing to use a repeated measures design for longitudinal data
+  
+  2. Confusing factorial and nested ANOVA
+  
+  3. Inappropriately pooling terms in a nested, randomized block, or factorial ANOVA
+  
+  4.  Avoid pseudofactorialism (Hurlbert & White 1993): Using a factorial ANOVA when separate ANOVAs are appropriate
+  
+* Set the alpha level for hypothesis tests (i.e., the critical values) in advance. Tests and hypothesis, as far as possible, should be specified in advance. A priori hypotheses, if a small subset of possible tests, can be tested at the experiment-wise alpha level, usually α=0.05.
+
+  + Note that Mead, Gelman and Hurlbert all reject the use of multiple comparison tests
+  
+  + Patterns which reveal themselves after the data have been analyzed, or just graphed, must be assessed using an appropriate multiple comparison procedure that reduces the test α to maintain the experiment-wise or family-wise α level
+  
+* Sample the appropriate populations & tabulate the data
+
+* Graph the data and critically look for violations of the assumptions, especially unequal spread
+  
+  + Unequal variance = heteroscedasticity = heteroskedacity = lack of homoscedasticity
+
+  + Unequal variance is best revealed by box plots
+  
+  + Unequal spread can be tested with Levene’s test (there are 5 different versions of Levene’s test)
+  
+* Transform the data to correct unequal spread
+
+  + √ transform for Poisson-distributed counts, log (X+1) for logarithmically or log-normally distributed data
+  
+  + Logit (log (p/(1-p)) transform or arcsin √P for binomial data
+  
+  + Note that Zuur in his many R-based books rarely if ever transforms data, preferring to use analyses that assume non-normal error
+structure
+
+* **Perform** **the** **ANOVA**
+
+  + Assess higher order interaction effects and analyze the influence of outliers
+  
+  + Graphically display residuals vs. Expected values & assess heteroscedasticity (again) and effects of outliers. Note that an outlier is only an outlier when compared to an underlying probability model
+  
+  + Use appropriate rules for pooling sums of squares to produce more powerful tests of lower order interactions & main effects
+  
+  + Evaluate null hypotheses, report p values & effect sizes
+  
+* Examine the data for outliers, but never remove outliers without strong justification
+
+  + Examine data notebooks to find out if there were conditions that justify treating outliers as a different statistical population (e.g., different analyst or different analytical instrument)
+  
+  + If the outlier’s removal might be justified, do the analysis with and without the outlier
+  
+  1. If the conclusion remains the same, leave the outlier in, unless it has caused a major violation in assumptions
+
+  2. If the conclusion differs, drop the outlier and all similar data
+  
+  + If there is no reason for removing the outlier
+  
+    1. Use rank-based methods, like Kruskal-Wallis or Friedman’s ANOVA which are resistant to outlier effects
+    
+    2. Report the results with and without the oultier(s)
+    
+* Multiple comparisons procedures, from most to least conservative: Sleuth Chapter 6 (next week)
+
+  + Scheffé: must be used whenever more than one group is combined in a linear contrast, more conservative than Bonferroni
+
+  + Bonferroni
+  
+  + Tukey’s Honestly Significant Difference (HSD), also called Tukey-Kramer if sample sizes are unequal
+  
+  + Student-Newman-Keuls More powerful than HSD
+  
+  + Benjamini–Hochberg False Discovery Rate 
+  
+  + Dunnet’s, appropriate if there is a control group
+  
+  + Tukey’s LSD with F-protection: Use LSD if the overall F statistic is significant; not sufficiently conservative
+  
+* Report all relevant p values and df needed to reconstruct the ANOVA table
+
+  + Hurlbert (1984): it wasn’t clear in the majority of ecological studies what test was performed
+  
+  + Avoid the significant/non-significant dichotomy (see Sterne & Smith 2001, Hurlbert et al.  2019, Gelman et al. 2021)
+  
+* Summarize the results of the ANOVA in the text, table or figure. It is unlikely that a journal will allow both a table and figure, but summary in the text is essential 
+
+* Report the effect size (i.e., difference in means with 95% confidence intervals, or estimate and standard error)
+
+* Report negative results, (e.g., failure to reject the null hypothesis)
+
+***
+
+# Case 5.1 Diet Restriction & Longevity
+
+![Sleuth3 Display 5.2](..\images\Display0501.jpg)
+
+***
+
+![Sleuth3 Display 5.2](..\images\Display0502.jpg)
+***
+
+## 5 planned contrasts out of choose (6,2) or 15 possible two-way tests.
+
+![Sleuth3 Display 5.3](..\images\Display0503.jpg)
+
+***
+
+If hypotheses are specified in advance, then you can test at a pre-set α level, without a posteriori (or post hoc, multiple comparison) adjustment of α levels. Recall that alpha = P(Type I error)
+
+* See Cook & Farewell (1996, J. Roy.  Stat. Assoc.  A; Posted in Blackboard).  In dose-response studies, no need to adjust for number of dose treatments.
+
+* One large design allows the use of a more precise estimate of the error variance
+
+  + Separate control vs. treatment t tests are not powerful
+  
+  + If interaction effects are evident, separate tests can be misleading.  They can miss
+interaction effects.
+
+## Summary of Statistical Findings
+
+* There is overwhelming evidence that mean lifetimes in the six groups are different (p-value < 0.001); analysis of variance F-test).
+
+* Analysis of the 5 particular questions are
+
+  1. There is convincing evidence that lifetime increases as a result of restricting the diet from 85 kcal/wk to 50 kcal/wk (1-sided p-value < 0.0001; t test)
+  
+  2. There is no evidence that reducing the calories before weaning increased lifespan, when the caloric intake after weaning is 50 kcal/wk (1-sided p value = 0.32, t test). A 95% CI for the amount by which the lifetime under the R/R50 diet exceeds the lifetime under the N/R50 diet is -
+1.7 to 2.9 months.
+
+  3. Further restriction of the diet from 50 to 40 kcal/wk increases lifetime by an estimated 2.8 months (95% CI: 0.5 to 5.1 months). The evidence that this effect is greater than zero is moderate (p=0.017, t test). 
+  
+  4. There was moderate evidence that lifetime was decreased by the lowering of protein in addition to the 50 kcal/wk diet (2-sided p value =0.024; t-test)
+  
+  5. There is convincing evidence that the control mice live longer than the mice on the non-purified (NP) diet (1-sided p-value <0.0001)
+  
+* Note that all 5 of these hypotheses can be tested as Tukey Least Significant Difference (LSD) tests (or linear contrasts) see Sleuth Ch 6
+
+***
+
+![Case 0501 Box et al. (2005) Graphical ANOVA](..\images\Case0501GraphicalANOVA.JPG)
+
+***
+
+# Case 5.2 The Spock Conspiracy Trial---An Observational Study
+
+Sleuth, page 117: Dr. Spock’s venire contained only 1 woman, who was released by the prosecution
+
+![Sleuth3 Display 5.4](..\images\Display0504.JPG)
+
+## Key questions
+
+* Is there evidence that women were underrepresented on the Spock judge’s venires
+
+* Is there evidence that there are differences in women’s representation on the other juries?
+
+***
+
+## Tsarnaev Jury: Was it a biased sample of the eastern Massachusetts population?
+
+![NBC News 2/27/2015](..\images\TsarnaevJury.JPG)
+
+
+The defense said 1,373 people, summoned from a population of about 5 million in eastern Massachusetts, were originally given numbers based on a random pool order list. New numbers were later assigned, based on when the jurors reported to court to complete written questionnaires.
+
+The defense argued that the reordering undermined the randomness of the selection process and pushed certain groups — including blacks, people under 30
+and people who live in Boston — down on the list and made them less likely to be chosen for the jury.
+
+***
+
+![Sleuth3 Case 0502. See Display 5.5 in Sleuth3](..\images\Case0502_boxplot.jpeg)
+
+## Statistical Summary
+
+* The percentage of women on the Spock judge’s venires were substantially lower than the other judges (t test of Spock judge vs.‘Other judges’)
+
+* There is little evidence to reject the null hypothesis of no difference in female representation among the
+other judges p=0.32 (1-way ANOVA)
+
+* The percentage of women is 15% less on the Spock judge’s venires (95% CI: 10% to 20%)
+
+![Case0502 Graphical ANOVA, Box et al. (2005)](..\images\Case0502_graphicalanova.JPeG)
+
+***
+
+# Case Study 5.1 Diet Restriction and Longevity---A Randomized Experiment: R analysis
+
+## First look at the structure of the data
+
+```{r Case Study 5.1 data structure}
+
+str(case0501)
+favstats(Lifetime ~ Diet, data = case0501)  # from Horton's mosaic
+
+```
+
+## Do a graphical analysis to evaluate outliers and homogeneity of variance
+
+```{r Case0501 graphical displays}
+
+# Re-order levels for better boxplot organization:
+myDiet <- factor(case0501$Diet, levels=c("NP","N/N85","N/R50","R/R50","lopro","N/R40") )
+myNames <- c("NP(49)","N/N85(57)","N/R50(71)","R/R50(56)","lopro(56)",
+             "N/R40(60)") # Make these for boxplot labeling.
+boxplot(Lifetime ~ myDiet, ylab= "Lifetime (months)", names=myNames,
+        xlab="Treatment (and sample size)", data=case0501)
+
+densityplot(~Lifetime, groups = Diet, auto.key = TRUE, data=case0501)
+
+```
+
+***
+
+## Do the analysis of variance (ANOVA) on the Case0501 longevity data
+
+```{r Case0501 ANOVA}
+myAov1 <- aov(Lifetime ~ Diet, data=case0501) # One-way analysis of variance
+myAov1
+summary(myAov1)
+summary.lm(myAov1)
+
+attributes(myAov1)
+
+```
+
+***
+## Analyze the residuals to examine homogeneity of variance and outliers
+
+```{r Case0501 residual plot}
+# Residual vs. fitted plot
+plot(myAov1, which=1) # Plot residuals versus estimated means.
+summary(myAov1)
+```
+The residual plot indicates no violation of assumptions.
+
+
+## Plot the Honestly Significant Differences (Sleuth Ch 6). Not as powerful as testing a priori hypotheses
+
+```{r Case0501 HSD}
+TukeyHSD(myAov1)
+plot(TukeyHSD(myAov1))
+```
+
+***
+
+## Box et al. (2005) Graphical ANOVA see Display 5.16, 5.17, p 134 & 135
+```{r Case0501 Box Graphical ANOVA}
+anovaPlot(myAov1, stacked = TRUE, base = TRUE, axes = TRUE,
+          faclab = TRUE, labels = TRUE, cex = par("cex"),
+          cex.lab = par("cex.lab"))
+```
+The graphical ANOVA shows the strong differences between most of the diets, especially NP and N/R40
+
+***
+
+## All Pairwise t tests with pooled sd, as in Ramsey & Schafer (2013)
+
+```{r Case0501 pairwise t tests with pooled sd}
+pairwise.t.test(case0501$Lifetime,case0501$Diet, pool.SD=TRUE, p.adj="none")
+```
+
+## General Linear Hypothesis Testing (glht package) of Specified Means
+
+## p-VALUES AND CONFIDENCE INTERVALS FOR SPECIFIED COMPARISONS OF MEANS
+
+```{r Case0501 glht tests of 5 a priori hypotheses}
+if(require(multcomp)){
+  diet <- factor(case0501$Diet,labels=c("lopro", "NN85", "NR40", "NR50", "NP", "RR50"))
+  
+  myAov2 <- aov(Lifetime ~ diet - 1, data=case0501)  # Note the -1 is in the Sleuth3 vignette
+  # It drops the dietlopro diet from the analysis, making it the llinear model
+  # reference group
+  summary(myAov2)
+  myComparisons <- glht(myAov2,
+                        linfct=c("dietNR50 - dietNN85 = 0",
+                                 "dietNR40 - dietNR50 = 0",
+                                 "dietRR50 - dietNR50 = 0",
+                                 "dietlopro - dietNR50 = 0",
+                                 "dietNN85 - dietNP = 0") )
+  summary(myComparisons,test=adjusted("none")) # No multiple comparison adjust.
+  confint(myComparisons, calpha = univariate_calpha()) # No adjustment
+}
+```
+
+***
+
+# Case Study 5.2 The Spock Conspiracy Trial---An Observational Study: R analysis
+
+
+## First look at the structure of the data
+
+```{r Case Study 5.2 data structure}
+str(case0502)
+favstats(Percent ~ Judge, data = case0502)  # from Horton's mosaic
+```
+
+## Do a graphical analysis with a boxplot to evaluate outliers and homogeneity of variance
+
+```{r Case0502 graphical displays}
+# Re-order levels for better boxplot organization:
+## Make new factor level names (with sample sizes) and analyze boxplots
+myNames <- c("A (5)", "B (6)", "C (9)", "D (2)", "E (6)", "F (9)", "Spock's (9)")
+
+boxplot(Percent ~ Judge, ylab = "Percent of Women on Judges' Venires",
+        names = myNames, xlab = "Judge (and number of venires)",
+        main = "Percent Women on Venires of 7 Massachusetts Judges", 
+        data=case0502)
+
+```
+
+***
+## Plot a colored boxplot
+```{r Case0502 colored boxplot}
+boxplot(Percent ~ Judge,  ylab= "Percent of Women on Judges' Venires",
+        names=myNames, xlab="Judge (and number of venires)",
+        main= "Percent Women on Venires of 7 Massachusetts Judges",
+        col="green", boxlwd=2,  medlwd=2,  whisklty=1,  whisklwd=2,
+        staplewex=.2, staplelwd=2,  outlwd=2,  outpch=21, outbg="green",
+        outcex=1.5, data=case0502)
+```
+
+
+## Do the analysis of variance (ANOVA) for Case0502 Spock data
+
+```{r Case0502 ANOVA}
+myAov2  <- aov(Percent ~ Judge, data=case0502)
+summary(myAov2) # Initial screening. Any evidence of judge differences? (yes)
+summary.lm(myAov2)
+attributes(myAov2)
+```
+
+***
+
+## Analyze the residuals to examine homogeneity of variance and outliers
+
+```{r Case0502 residual plot}
+# Residual vs. fitted plot
+plot(myAov2, which=1) # Plot residuals versus estimated means.
+summary(myAov2)
+```
+The residual plot indicates no apparent violation of assumptions.
+
+***
+
+## Analysis 1. TWO-SAMPLE t-TEST (ASSUMING NON-SPOCK JUDGES HAVE A COMMON MEAN)
+```{r Case0502 t tests}
+SpockOrOther <- factor(ifelse(case0502$Judge=="Spock's","Spock","Other"))                    
+aovFull      <- aov(Percent ~ Judge, data=case0502)
+aovReduced   <- aov(Percent ~ SpockOrOther, data=case0502) 
+anova(aovReduced,aovFull) #Any evidence that 7 means fit better than 2 means?  
+ # Evidence that 2 means differ?
+t.test(Percent ~ SpockOrOther, var.equal=TRUE, data=case0502)
+```
+There is strong evidence that the Spock judge differs from the other 6.
+There is little evidence for a difference among the 6 non-Spock judges
+
+##  Graphical ANOVA from Box, Hunter & Hunter, 2nd edition.
+```{r Case0502 Graphical ANOVA}
+anovaPlot(aovFull, stacked = TRUE, base = TRUE, axes = TRUE,
+          faclab = TRUE, labels = TRUE, cex = par("cex"),
+          cex.lab = par("cex.lab"))
+```
+
+There is strong evidence from the Box et al. (2005) graphical ANOVA that the Spock juries differs from the other 6 in the percentage of females.
+
+***
+
+## ANALYSIS 2. COMPARE SPOCK MEAN TO AVERAGE OF OTHER MEANS, using multcomp::glht
+
+```{r Case0502 Spock mean vs. other 5 means}
+
+myAov3 <- aov(Percent ~ Judge - 1, data = case0502)
+
+myContrast    <- rbind(c(1/6, 1/6, 1/6, 1/6, 1/6, 1/6, - 1))
+if(require(multcomp)) {    
+  myComparison  <- glht(myAov3, linfct=myContrast) 
+  summary(myComparison, test=adjusted("none"))
+  confint(myComparison)
+}
+```
+
+myAov3        <- aov(Percent ~ Judge - 1)
+
+myContrast    <- rbind(c(1/6, 1/6, 1/6, 1/6, 1/6, 1/6, - 1))
+if(require(multcomp)){  # use multcomp library
+  myComparison  <- glht(myAov3, linfct=myContrast) 
+  summary(myComparison, test=adjusted("none"))   
+  confint(myComparison) 
+}
+
+***
+
+# Sleuth3 _5.2_ Comparing any two of several means
+
+Comparisons among means in ANOVA can be analyzed using t statistics, with a new, more precise estimate of pooled error. It is that pooling, with higher df, that makes ANOVA a more powerful method than multiple *t* tests.
+
+![Sleuth3 Display 0506](..\images\Display0506.jpg)
+sp = √ Error Mean Square = √ Within Groups MS 
+
+***
+
+![Case 5.1 Pooled standard error](..\images\case0501pooledse.JPG)
+
+***
+
+![Extra Sum of Squares F test](..\images\extrasumofsquaresF.jpg)
+
+***
+
+![F distribution](..\images\Fdistribution.jpg)
+
+***
+
+![F distribution](..\images\Fdistribution_2.jpg)
+
+***
+
+![Display 5.10](..\images\Display0510.jpg)
+
+***
+
+![Case0502 ANOVA table](..\images\case0502ANOVATable.JPG)
+
+***
+
+![Case0502 ANOVA linear contrast](..\images\case0502ANOVAlc.JPG)
+
+***
+
+# Testing linear contrasts with R's multcomp
+
+```{r Case0502 multcomp}
+
+myContrast    <- rbind(c(1/6, 1/6, 1/6, 1/6, 1/6, 1/6, - 1))
+if(require(multcomp)){  # use multcomp library
+  myComparison  <- glht(myAov3, linfct=myContrast) 
+  summary(myComparison, test=adjusted("none"))   
+  confint(myComparison) 
+}
+```
+
+# When is an effect Random?
+
+See Sleuth Page 137-139 in 3rd ed, 136-138 in 2nd: ‘The Random Effects model’
+
+* The differences among subgroup means is NOT of intrinsic interest (not the case with Judges)
+
+  + You may be interested in whether the effect changes from day to day – i.e, estimating day-to-day or ‘among day’ variance – but you are not interested specifically in the differences on any pair of days
+  
+*  If the number of levels of a factor is small relative to the total possible levels of a factor (not the case with district Judges since ALL were sampled)
+
+* Are the subgroups a representative or random sample of some larger group?  (No for judges)
+
+![Quinn and Keough on random effects](..\images\QuinnKeoughRandom.JPG)
+
+## Spock judge versus the other six judges. Is the judge effect fixed or random?
+
+* Model I ANOVA: Fixed effects ANOVA: test for differences in the averages among groups
+
+* Model II ANOVA: Random effects ANOVA: test differences in variances due to the group classification
+
+* Model III model: Fixed & random factors 
+
+__Note:__ The calculations are often identical for random and fixed-effects ANOVA, but the interpretations are different. With Factorial ANOVA (>1 factor), the F statistics differ among models, with a different denominator mean square for random factors. The inference allowed differs among models
+
+# ANOVA Robustness of Assumptions
+
+* Normality is not critical.  Extremely long-tailed distributions or skewed distributions, coupled with different sample sizes present the only serious distributional problems
+
+* The assumptions of independence within and across groups is critical
+
+* The assumption of equal standard deviations in the populations is crucial. Also called the equal variance, equal spread, or homoscedasticity assumption (vs. Heterorscedasticity). Winer et al. (1991) argue that ANOVA is robust to violations of equal variance if the sample sizes are equal.
+
+* The tools are not resistant to severely outlying observations
+
+* Check the assumptions by analyzing the residuals with Levene’s test and boxplots
+
+![Sleuth3 Display 5.13 p 131](..\images\Winerequalvariance.JPG)
+
+***
+
+![Sleuth3 Display 5.15 p 133](..\images\Display0515.JPG)
+
+***
+
+![Sleuth3 Display 5.19 p 139](..\images\confidenceintervals.JPG)
+
+***
+
+![Cumming and Finch (2005) Inference by eye](..\images\inferencebyeye.JPG)
+
+***
+
+![Cumming and Finch (2005) Inference by eye](..\images\CummingFinchCIs.JPG)
+
+# Statistical versus scientific significance
+
+Always report the effect size and NEVER report ‘significant’ or 'not significant'
+
+* Deming: report effect sizes for tests
+
+* Many statistically significant results are trivial ecologically (environmentally, chemically or socially)
+
+  + Most null hypotheses (μ1 = μ2) are false and the p-value is often dependent on the sample size
+  
+  + Gelman never reports p-values in his statistics books, usually effect and standard error
+
+  + e.g., a p value of 0.00001 may not be ecologically meaningful if there is only a minor difference in effect and a much larger difference causes meaningful changes in the ecosystem
+  
+* Test statistics with large p values (>0.1) but with broad 95% confidence intervals may be consistent with important ecological or other effects
+
+  + What is the probability of Type II error?
+  + What are the ecological consequences of failing to reject a false null hypothesis (i.e., committing a
+Type II error) ?
+
+![Buhl-Mortensen (1996) The Precautionary Principle](..\images\PrecautionaryPrinciple.JPG)
+
+***
+
+![Type II error and Power](..\images\Power.JPG)
+
+*** 
+
+# Nonparametric 1-way ANOVA Kruskal Wallis test
+
+![Type II error and Power](..\images\Kruskal.JPG)
+
+# Conclusions
+
+## Assumptions
+
+* Homoscedasticity or equal variance among groups
+
+  + Levene’s test a rough guide
+  
+  + Boxplots or residual plots are the standard tools for assessing homoscedasticity (equal variance among groups)
+
+  + Spread vs. Level plots
+  
+* Independence of errors among groups a key ANOVA assumption
+
+* Normally distributed errors (not underlying data) not crucial
+
+## An ANOVA is more efficient & powerful than multiple, separate t tests
+
+* The ANOVA error MS (=within groups MS) provides a more precise estimate of the population standard deviation [It is not a smaller estimate of error {it is an unbiased estimator})
+
+## Kruskal-Wallis ANOVA is the rank-based analogue of 1-way ANOVA and is resistant to outliers but not unequal spread
+
+* Ties correction must be used
+
+* Effect sizes, hierarchic structure, and covariates difficult to handle
+
+## ANOVA tests for difference in means (fixed effect) or whether σ^2^= 0 (random effect) or both (mixed model)
+
+* Fixed vs. random effects
+
+  + The choice of fixed vs. random effects is often crucial and depends on whether the factor levels (judges in the Spock example) represent a random or representative sample from some larger statistical population
+  
+  + The F statistics and interpretation of the results sometimes change depending on whether fixed or random effects are chosen
