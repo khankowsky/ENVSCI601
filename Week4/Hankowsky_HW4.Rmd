@@ -1,0 +1,131 @@
+---
+title: "Hankowsky_HW4"
+author: "Keith Hankowsky"
+date: '2022-09-28'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+
+## 5.23 
+```{r}
+#pulling the data from the 'Sleuth 3' package 
+trex <- Sleuth3::ex0523
+
+#looking at the dataframe and stats for each bone specimen 
+head(trex)
+favstats(Oxygen ~ Bone, data = trex)
+
+
+#boxplot of oxygen isotopic composition of bone phosphate by bone specimens
+trex %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Bone, y = Oxygen, fill = Bone)) + 
+  labs(title = "Boxplot of Oxygen Isotopic Composition of Bone Phosphate by Bone Specimen", 
+       x = "", y = "Oxygen Isotopic Composition") + 
+  theme_classic()
+
+
+#density plot of oxygen isotopic composition of bone phosphate by bone specimens
+trex %>%
+  ggplot() + 
+  geom_density(aes(x = Oxygen, group = Bone, fill = Bone)) + 
+  facet_wrap(~Bone) + 
+  theme_classic() + 
+  theme(legend.position = "none")
+
+
+#running the anova 
+trex_aov <- aov(Oxygen ~ Bone, data = trex)
+summary(trex_aov)
+
+plot(trex_aov)
+
+summary.lm(trex_aov)
+
+```
+
+## 5.25
+```{r}
+#pulling the data from the 'Sleuth 3' package 
+income <- Sleuth3::ex0525
+
+#looking at the dataframe and stats for each bone specimen 
+head(income)
+favstats(Income2005 ~ Educ, data = income)
+
+
+#boxplot of 2005 income by number of years of education 
+income %>%
+  mutate(Educ = fct_relevel(Educ,
+                            "<12", "12", "13-15", "16", ">16")) %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Educ, y = Income2005, fill = Educ)) + 
+  labs(title = "Boxplot of 2005 Income by Number of Years of Education", 
+       x = "", y = "2005 Income ($)") + 
+  theme_classic()
+
+
+#density plot of 2005 income by number of years of education 
+income %>%
+  mutate(Educ = fct_relevel(Educ,
+                            "<12", "12", "13-15", "16", ">16")) %>%
+  ggplot() + 
+  geom_density(aes(x = Income2005, group = Educ, fill = Educ), alpha = 0.4) + 
+  facet_wrap(~Educ) + 
+  theme_classic() + 
+  theme(legend.position = "none")
+
+
+```
+
+
+
+# Supplemental Problems 
+
+## 5.24
+```{r}
+#pulling the data from the 'Sleuth 3' package 
+zinc <- Sleuth2::ex0524
+
+#looking at the dataframe and stats for each bone specimen 
+head(zinc)
+favstats(Zinc ~ Group, data = zinc)
+
+#boxplot of 2005 income by number of years of education 
+zinc %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Group, y = Zinc, fill = Group)) + 
+  scale_x_discrete(labels = c("Pregnant\n &\n Non-Vegetarian", "Pregnant\n &\n Vegetarian", "Non-Pregnant\n &\n Vegetarian")) +
+  scale_fill_discrete(name = "", labels = c("Pregnant &\n Non-Vegetarian", "Pregnant &\n Vegetarian", "Non-Pregnant &\n Vegetarian")) +
+  labs(title = "Boxplot of Zinc Concentration by Vegetarian/Pregnant Status", 
+       x = "", y = "Zinc Concentration") + 
+  theme_classic()
+
+
+```
+
+## 5.25
+```{r}
+cck <- Sleuth2::ex0525
+
+
+
+```
+
+
+# Master Problem 
+```{r}
+
+```
+
