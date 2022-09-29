@@ -49,18 +49,19 @@ trex %>%
 trex_aov <- aov(Oxygen ~ Bone, data = trex)
 summary(trex_aov)
 
+par(mfrow=c(2,2))
 plot(trex_aov)
 
-summary.lm(trex_aov)
-
 ```
+These data provide overwhelming evidence that the mean oxygen isotopic composition of bone phosphate is different in the 12 bones sampled (p-value < 0.0000001; analysis of varience F-test). 
+
 
 ## 5.25
 ```{r}
 #pulling the data from the 'Sleuth 3' package 
 income <- Sleuth3::ex0525
 
-#looking at the dataframe and stats for each bone specimen 
+#looking at the dataframe and stats for each group
 head(income)
 favstats(Income2005 ~ Educ, data = income)
 
@@ -87,6 +88,20 @@ income %>%
   theme(legend.position = "none")
 
 
+#running the anova 
+income_aov <- aov(Income2005 ~ Educ, data = income)
+summary(income_aov)
+
+par(mfrow=c(2,2))
+plot(income_aov)
+
+
+#comparison of different groups 
+TukeyHSD(income_aov)
+
+
+
+
 ```
 
 
@@ -98,34 +113,82 @@ income %>%
 #pulling the data from the 'Sleuth 3' package 
 zinc <- Sleuth2::ex0524
 
-#looking at the dataframe and stats for each bone specimen 
+#looking at the dataframe and stats for each group
 head(zinc)
 favstats(Zinc ~ Group, data = zinc)
 
-#boxplot of 2005 income by number of years of education 
+#boxplot of zinc concentration by pregnant/vegetarian status
 zinc %>%
   ggplot() + 
   geom_boxplot(aes(x = Group, y = Zinc, fill = Group)) + 
   scale_x_discrete(labels = c("Pregnant\n &\n Non-Vegetarian", "Pregnant\n &\n Vegetarian", "Non-Pregnant\n &\n Vegetarian")) +
-  scale_fill_discrete(name = "", labels = c("Pregnant &\n Non-Vegetarian", "Pregnant &\n Vegetarian", "Non-Pregnant &\n Vegetarian")) +
+  scale_fill_discrete(name = "", labels = c("Pregnant &\n Non-Vegetarian\n", "Pregnant &\n Vegetarian\n", "Non-Pregnant &\n Vegetarian\n")) +
   labs(title = "Boxplot of Zinc Concentration by Vegetarian/Pregnant Status", 
        x = "", y = "Zinc Concentration") + 
   theme_classic()
 
 
+#density plot of zinc concentration by pregnant/vegetarian status
+zinc %>%
+  ggplot() + 
+  geom_density(aes(x = Zinc, group = Group, fill = Group), alpha = 0.4) + 
+  theme_classic() 
+
+
+#running the anova 
+zinc_aov <- aov(Zinc ~ Group, data = zinc)
+summary(zinc_aov)
+
+par(mfrow=c(2,2))
+plot(zinc_aov)
+
 ```
 
 ## 5.25
 ```{r}
-cck <- Sleuth2::ex0525
+#reading in the data
+cck <- read.csv("../Week4/data/ex0525_2nd.csv",head=T)
+
+#looking at the dataframe and stats for each group 
+head(cck)
+favstats(CCK ~ Diagnosis, data = cck)
 
 
+#boxplot of cck activity by diagnosis
+cck %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Diagnosis, y = CCK, fill = Diagnosis)) + 
+  labs(title = "Boxplot of CCK Activity by Diagnosis", 
+       x = "", y = "CCK Activity") + 
+  theme_classic()
+
+
+#density plot of cck activity by diagnosis
+cck %>%
+  ggplot() + 
+  geom_density(aes(x = CCK, group = Diagnosis, fill = Diagnosis), alpha = 0.4) + 
+  theme_classic() 
+
+
+#running the anova 
+cck_aov <- aov(CCK ~ Diagnosis, data = cck)
+summary(cck_aov)
+
+par(mfrow=c(2,2))
+plot(cck_aov)
 
 ```
 
 
 # Master Problem 
 ```{r}
+library(BHH2)
+
+#graphical anova plot for 5.25 (basic problem)
+anovaPlot(income_aov, stacked = TRUE, base = TRUE, axes = TRUE,
+          faclab = TRUE, labels = TRUE, cex = par("cex"),
+          cex.lab = par("cex.lab"))
+
 
 ```
 
