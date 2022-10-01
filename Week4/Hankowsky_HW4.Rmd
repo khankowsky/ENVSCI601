@@ -53,8 +53,12 @@ par(mfrow=c(2,2))
 plot(trex_aov)
 
 ```
-These data provide overwhelming evidence that the mean oxygen isotopic composition of bone phosphate is different in the 12 bones sampled (p-value < 0.0000001; analysis of varience F-test). 
+<br>
 
+The boxplots show that the assumption of equal variance could be an issue, but there are relatively equal sample sizes between the groups, so a one-way ANOVA was used to assess the blood isotope composition of bone phosphate in each of the 12 bone specimens. These data provide overwhelming evidence that the mean oxygen isotopic composition of bone phosphate is different in the 12 bones sampled (p-value < 0.0000001; analysis of variance F-test). However, since all the bone samples were taken from a single T.rex skeleton it is not enough evidence to make an inference about the entire T.rex species. 
+
+
+***
 
 ## 5.25
 ```{r}
@@ -103,14 +107,21 @@ TukeyHSD(income_aov)
 
 
 ```
+<br>
 
+The boxplots show relatively equal variance, so a one-way ANOVA was used to assess whether the number of years of education impacts the 2005 income of the sample group. These data provide overwhelming evidence that the mean income in 2005 is different in the 5 groups of education level (p-value < 0.0000001; analysis of variance F-test). 
+
+These data provide no evidence for a difference in 2005 income between the <12 years of education group and the 12 year group (p-value = 0.203, TukeyHSD). However, the 12 year group had a mean income \$8,563 greater than the less than 12 year group (95% confidence interval: \$2,355 to \$19,482). These data provide strong evidence that the mean for the 13-15 years of education group was different than the mean for the  12 year of education group (p-value = 0.0026, TukeyHSD). The mean for the 13-15 year group was \$8,011 greater than the 12 year group (95% confidence interval: \$2,002 to \$14,019). There was overwhelming evidence that the mean for the 16 year group was different than the 13-15 year of education group (p-value < 0.0000001, Tukey HSD). The mean for the 16 year group was \$25,121 greater than the 13-15 year group (95% confidence interval: \$17,550 to \$32,691). These data provide no evidence for a difference in income between the 16 year and >16 year education groups (p-value = 0.18, TukeyHSD). However, the mean for the >16 year group was \$6,858 greater than the 16 year group (95% confidence interval: \$1,714 to \$15,431). 
+
+
+***
 
 
 # Supplemental Problems 
 
 ## 5.24
 ```{r}
-#pulling the data from the 'Sleuth 3' package 
+#pulling the data from the 'Sleuth 2' package 
 zinc <- Sleuth2::ex0524
 
 #looking at the dataframe and stats for each group
@@ -142,7 +153,17 @@ summary(zinc_aov)
 par(mfrow=c(2,2))
 plot(zinc_aov)
 
+
+#comparison of different groups 
+TukeyHSD(zinc_aov)
+
 ```
+<br>
+
+The boxplots show relatively equal variance, so a one-way ANOVA was used to assess the impact of vegetarianism on pregnant women. These data provide overwhelming evidence that there is no difference in mean zinc concentrations between the groups of women (p-value = 0.98; analysis of variance F-test). There is no evidence of a difference in zinc concentrations between the pregnant vegetarian women and the pregnant but non-vegetarian women (p-value = 0.99, TukeyHSD). However, the mean zinc concentration for the pregnant non-vegetarian women was 0.92 ug/g greater than the pregnant vegetarian women (95% confidence internal: 25.64 - 27.5 ug/g). 
+
+
+***
 
 ## 5.25
 ```{r}
@@ -177,8 +198,18 @@ summary(cck_aov)
 par(mfrow=c(2,2))
 plot(cck_aov)
 
-```
 
+#comparison of different groups 
+TukeyHSD(cck_aov)
+
+
+```
+<br>
+
+The boxplots show that the assumption of equal variance could be an issue, but there are relatively equal sample sizes between the groups, so a one-way ANOVA was used to assess the importance of CCK on gastrointestinal disease. These data provide solid evidence that there is a difference in mean CCK activity for each diagnosis type (p-value = 0.0025; analysis of variance F-test). These data provide inconclusive evidence for a differnece in mean CCK activity between the Gallstone group and the healthy control group (p-value = 0.089, TukeyHSD). However the mean CCK activity for the Gallstone group was 0.18 ivy/mg greater than the healthy control group (95% confidence interval: 0.023 to 0.090 ivg/mg). These data provide strong evidence for a difference in mean CCK activity between the Ulcer group and the healthy control group (p-value = 0.0018, TukeyHSD). The mean CCK activity for the Ulcer group was 0.14 ivy/mg greater than the healthy control group (95 confidence interval: 0.67 to 0.35 ivy/mg). 
+
+
+***
 
 # Master Problem 
 ```{r}
@@ -192,3 +223,6 @@ anovaPlot(income_aov, stacked = TRUE, base = TRUE, axes = TRUE,
 
 ```
 
+
+<br>
+<br>
