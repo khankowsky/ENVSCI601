@@ -1,0 +1,242 @@
+---
+title: "Hankowsky_HW4"
+author: "Keith Hankowsky"
+date: '2022-09-28'
+output: html_document
+---
+<span style="color: magenta"> **General Comments [Gallagher's comments in magenta]:** I changed your read.csv call to match my folders and your file knitted beautifully (I just spent 30 min getting another student's code to knit). I didn't take off points for it, but on two problems you used the Chapter 6 Tukey HSD when the problems called for the Tukey LSD, which is just a t test with a pooled sd. **Basic score (5+4.5)/10, Supplemental Score (2.5+2.5)/5 Master 4.5/5 Total score 19/10** </span>
+
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+
+## 5.23 
+```{r}
+#pulling the data from the 'Sleuth 3' package 
+trex <- Sleuth3::ex0523
+
+#looking at the dataframe and stats for each bone specimen 
+head(trex)
+favstats(Oxygen ~ Bone, data = trex)
+
+
+#boxplot of oxygen isotopic composition of bone phosphate by bone specimens
+trex %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Bone, y = Oxygen, fill = Bone)) + 
+  labs(title = "Boxplot of Oxygen Isotopic Composition of Bone Phosphate by Bone Specimen", 
+       x = "", y = "Oxygen Isotopic Composition") + 
+  theme_classic()
+
+
+#density plot of oxygen isotopic composition of bone phosphate by bone specimens
+trex %>%
+  ggplot() + 
+  geom_density(aes(x = Oxygen, group = Bone, fill = Bone)) + 
+  facet_wrap(~Bone) + 
+  theme_classic() + 
+  theme(legend.position = "none")
+
+
+#running the anova 
+trex_aov <- aov(Oxygen ~ Bone, data = trex)
+summary(trex_aov)
+
+par(mfrow=c(2,2))
+plot(trex_aov)
+
+```
+<br>
+
+The boxplots show that the assumption of equal variance could be an issue, but there are relatively equal sample sizes between the groups, so a one-way ANOVA was used to assess the blood isotope composition of bone phosphate in each of the 12 bone specimens. These data provide overwhelming evidence that the mean oxygen isotopic composition of bone phosphate is different in the 12 bones sampled (p-value < 0.0000001; analysis of variance F-test). However, since all the bone samples were taken from a single T.rex skeleton it is not enough evidence to make an inference about the entire T.rex species. 
+
+<span style="color: magenta"> **Basic 5.23_3rd ** Great analysis!  The traditional test for homogeneity of variance is the car::leveneTest, but your analysis was perhaps better than the low-power Levene's test, which showed a relatively high p-value. Even if Levene's test had a low p-value, none of the standard transformations would improve the unequal variance shown in your residual vs. fitted value plot. Your summary is great. The answer posed in the title of the question is a trick question. While the ANOVA results would indicate heterothermy, Barricks & Showers (course materials/reprints) conclude that the range of variation was in the modern homeothermic range and that T. res was warm blooded.** score 5/5** </span>
+
+
+
+***
+
+## 5.25
+```{r}
+#pulling the data from the 'Sleuth 3' package 
+income <- Sleuth3::ex0525
+
+#looking at the dataframe and stats for each group
+head(income)
+favstats(Income2005 ~ Educ, data = income)
+
+
+#boxplot of 2005 income by number of years of education 
+income %>%
+  mutate(Educ = fct_relevel(Educ,
+                            "<12", "12", "13-15", "16", ">16")) %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Educ, y = Income2005, fill = Educ)) + 
+  labs(title = "Boxplot of 2005 Income by Number of Years of Education", 
+       x = "", y = "2005 Income ($)") + 
+  theme_classic()
+
+
+#density plot of 2005 income by number of years of education 
+income %>%
+  mutate(Educ = fct_relevel(Educ,
+                            "<12", "12", "13-15", "16", ">16")) %>%
+  ggplot() + 
+  geom_density(aes(x = Income2005, group = Educ, fill = Educ), alpha = 0.4) + 
+  facet_wrap(~Educ) + 
+  theme_classic() + 
+  theme(legend.position = "none")
+
+
+#running the anova 
+income_aov <- aov(Income2005 ~ Educ, data = income)
+summary(income_aov)
+
+par(mfrow=c(2,2))
+plot(income_aov)
+
+
+#comparison of different groups 
+TukeyHSD(income_aov)
+
+
+
+
+```
+<br>
+
+The boxplots show relatively equal variance, so a one-way ANOVA was used to assess whether the number of years of education impacts the 2005 income of the sample group. These data provide overwhelming evidence that the mean income in 2005 is different in the 5 groups of education level (p-value < 0.0000001; analysis of variance F-test). 
+
+These data provide no evidence for a difference in 2005 income between the <12 years of education group and the 12 year group (p-value = 0.203, TukeyHSD). However, the 12 year group had a mean income \$8,563 greater than the less than 12 year group (95% confidence interval: \$2,355 to \$19,482). These data provide strong evidence that the mean for the 13-15 years of education group was different than the mean for the  12 year of education group (p-value = 0.0026, TukeyHSD). The mean for the 13-15 year group was \$8,011 greater than the 12 year group (95% confidence interval: \$2,002 to \$14,019). There was overwhelming evidence that the mean for the 16 year group was different than the 13-15 year of education group (p-value < 0.0000001, Tukey HSD). The mean for the 16 year group was \$25,121 greater than the 13-15 year group (95% confidence interval: \$17,550 to \$32,691). These data provide no evidence for a difference in income between the 16 year and >16 year education groups (p-value = 0.18, TukeyHSD). However, the mean for the >16 year group was \$6,858 greater than the 16 year group (95% confidence interval: \$1,714 to \$15,431). 
+
+<span style="color: magenta"> **Basic 5.25_3rd ** Your analysis was very good, but with one big exception. The income data, as most income data do, cry out for a log transformation. car::leveneTest of the untransformed and transformed data show the need as does your residual vs. fitted value plot, The normal Q-Q plot which should be a straight line looks like a hockey stick. The density plots are all highly right skewed. With the log transform, the data look fine, and the assumption of homoscedasticity is met. The linear contrasts are ok, but in Chapter 5, the Sleuth authors wanted you to use just straight t tests with pooled sd. pairwise t.test does that and multcomp::glht does the linear contrast for the 4 comparisons. Tukey HSD is a great multicomparison test, but Sleuth doesn't introduce it until Chapter 6.   ** score 4.5/5** </span>
+
+
+***
+
+
+# Supplemental Problems 
+
+## 5.24
+```{r}
+#pulling the data from the 'Sleuth 2' package 
+zinc <- Sleuth2::ex0524
+
+#looking at the dataframe and stats for each group
+head(zinc)
+favstats(Zinc ~ Group, data = zinc)
+
+#boxplot of zinc concentration by pregnant/vegetarian status
+zinc %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Group, y = Zinc, fill = Group)) + 
+  scale_x_discrete(labels = c("Pregnant\n &\n Non-Vegetarian", "Pregnant\n &\n Vegetarian", "Non-Pregnant\n &\n Vegetarian")) +
+  scale_fill_discrete(name = "", labels = c("Pregnant &\n Non-Vegetarian\n", "Pregnant &\n Vegetarian\n", "Non-Pregnant &\n Vegetarian\n")) +
+  labs(title = "Boxplot of Zinc Concentration by Vegetarian/Pregnant Status", 
+       x = "", y = "Zinc Concentration") + 
+  theme_classic()
+
+
+#density plot of zinc concentration by pregnant/vegetarian status
+zinc %>%
+  ggplot() + 
+  geom_density(aes(x = Zinc, group = Group, fill = Group), alpha = 0.4) + 
+  theme_classic() 
+
+
+#running the anova 
+zinc_aov <- aov(Zinc ~ Group, data = zinc)
+summary(zinc_aov)
+
+par(mfrow=c(2,2))
+plot(zinc_aov)
+
+
+#comparison of different groups 
+TukeyHSD(zinc_aov)
+
+```
+<br>
+
+The boxplots show relatively equal variance, so a one-way ANOVA was used to assess the impact of vegetarianism on pregnant women. These data provide overwhelming evidence that there is no difference in mean zinc concentrations between the groups of women (p-value = 0.98; analysis of variance F-test). There is no evidence of a difference in zinc concentrations between the pregnant vegetarian women and the pregnant but non-vegetarian women (p-value = 0.99, TukeyHSD). However, the mean zinc concentration for the pregnant non-vegetarian women was 0.92 ug/g greater than the pregnant vegetarian women (95% confidence internal: 25.64 - 27.5 ug/g). 
+
+<span style="color: magenta"> **Supplemental 5.24_2nd ** Excellent answer. As a Chapter 5, not 6 problem, the Sleuth authors would prefer that you do the t.tests with no adjustment of p values for multicomparisons. You used Tukey's HSD, which is a very good multiple comparisons procedure. pairwise.t.test and multcomp::glht will solve for the p-values and estimates and CI's for the linear contrasts using a pooled sd. ** score 2.5/2.5** </span>
+
+
+
+***
+
+## 5.25
+```{r}
+#reading in the data
+# cck <- read.csv("../Week4/data/ex0525_2nd.csv",head=T)
+# Gallagher's modification:
+cck <- read.csv("../data/ex0525_2nd.csv",head=T)
+
+#looking at the dataframe and stats for each group 
+head(cck)
+favstats(CCK ~ Diagnosis, data = cck)
+
+
+#boxplot of cck activity by diagnosis
+cck %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Diagnosis, y = CCK, fill = Diagnosis)) + 
+  labs(title = "Boxplot of CCK Activity by Diagnosis", 
+       x = "", y = "CCK Activity") + 
+  theme_classic()
+
+
+#density plot of cck activity by diagnosis
+cck %>%
+  ggplot() + 
+  geom_density(aes(x = CCK, group = Diagnosis, fill = Diagnosis), alpha = 0.4) + 
+  theme_classic() 
+
+
+#running the anova 
+cck_aov <- aov(CCK ~ Diagnosis, data = cck)
+summary(cck_aov)
+
+par(mfrow=c(2,2))
+plot(cck_aov)
+
+
+#comparison of different groups 
+TukeyHSD(cck_aov)
+
+
+```
+<br>
+
+The boxplots show that the assumption of equal variance could be an issue, but there are relatively equal sample sizes between the groups, so a one-way ANOVA was used to assess the importance of CCK on gastrointestinal disease. These data provide solid evidence that there is a difference in mean CCK activity for each diagnosis type (p-value = 0.0025; analysis of variance F-test). These data provide inconclusive evidence for a differnece in mean CCK activity between the Gallstone group and the healthy control group (p-value = 0.089, TukeyHSD). However the mean CCK activity for the Gallstone group was 0.18 ivy/mg greater than the healthy control group (95% confidence interval: 0.023 to 0.090 ivg/mg). These data provide strong evidence for a difference in mean CCK activity between the Ulcer group and the healthy control group (p-value = 0.0018, TukeyHSD). The mean CCK activity for the Ulcer group was 0.14 ivy/mg greater than the healthy control group (95 confidence interval: 0.67 to 0.35 ivy/mg). 
+
+<span style="color: magenta"> **Supplemental 5.25_2nd** Excellent answer. But, as a chapter 5 problem the soltuion the Sleuth authors were hoping for was the t.test with pooled sd, with no adjustment for multiple comparisons. This is called the Tukey Least Significant Difference test and can be done with pairwise.t.test and multcomp::glht. ** score 2.5/2.5** </span>
+
+***
+
+# Master Problem 
+```{r}
+library(BHH2)
+
+#graphical anova plot for 5.25 (basic problem)
+anovaPlot(income_aov, stacked = TRUE, base = TRUE, axes = TRUE,
+          faclab = TRUE, labels = TRUE, cex = par("cex"),
+          cex.lab = par("cex.lab"))
+
+
+```
+
+<span style="color: magenta"> **Master Graphical ANOVA** You can really see the positive skew crying out for a log transform in the residual plot. I'll attach a graphical ANOVA that I had a professional graphic artist modify for a paper I'm writing. The data in that paper were log transformed. ** score 4.5/5** </span>
+
+<br>
+<br>
