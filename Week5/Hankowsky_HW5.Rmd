@@ -1,0 +1,153 @@
+---
+title: "Hankowsky_HW5"
+output: html_document
+date: "2022-10-06"
+---
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 6.24
+```{r}
+#read in the data 
+orientation <- Sleuth3::ex0624
+
+#looking at the dataframe and stats for each group 
+head(orientation)
+favstats(Volume ~ Group, data = orientation)
+
+
+#boxplot of cck activity by diagnosis
+orientation %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Group, y = Volume, fill = Group)) + 
+  labs(title = "Boxplot of INAH3 Volume by Group", 
+       x = "", y = "INAH3 Volume") + 
+  theme_classic()
+
+
+#density plot of cck activity by diagnosis
+orientation %>%
+  ggplot() + 
+  geom_density(aes(x = Volume, group = Group, fill = Group), alpha = 0.4) + 
+  theme_classic() 
+
+
+#running the anova 
+orientation_aov <- aov(Volume ~ Group, data = orientation)
+summary(orientation_aov)
+
+par(mfrow=c(2,2))
+plot(orientation_aov)
+
+```
+
+***
+
+## 7.28
+```{r}
+#read in data
+neuron <- Sleuth3::ex0728
+
+#looking at the dataframe and stats for each group 
+head(neuron)
+
+#plot the activity level as a function of years 
+neuron %>%
+  ggplot() + 
+  geom_point(aes( x= Years, y =  Activity)) + 
+  theme_classic()
+
+#plot it again with the regression line and smooth 
+neuron %>%
+  ggplot(aes( x= Years, y =  Activity)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  theme_classic()
+
+
+
+#run the regression 
+neuron_lm <- lm(Activity ~ Years, data = neuron)
+summary(neuron_lm)
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(neuron_lm)
+```
+
+
+
+
+# Supplemental Problems 
+
+## 6.24(Sleuth 2nd Edition)
+```{r}
+#read in data
+bearings <- Sleuth2::ex0621
+
+#looking at the dataframe and stats for each group 
+head(bearings)
+
+```
+
+***
+
+
+## 7.27(Sleuth 2nd Edition)
+```{r}
+#read in data
+nebulae <- Sleuth2::ex0727
+
+#looking at the dataframe and stats for each group 
+head(nebulae)
+
+#plot the distance as a function of velocity 
+nebulae %>%
+  ggplot() + 
+  geom_point(aes( x= Distance, y =  Velocity)) + 
+  theme_classic()
+
+#plot it again with the regression line and smooth 
+nebulae %>%
+  ggplot(aes( x= Distance, y =  Velocity)) +
+  geom_point() + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  theme_classic()
+
+
+
+#run the regression 
+nebulae_lm <- lm(Distance ~ Velocity, data = nebulae)
+summary(nebulae_lm)
+anova(nebulae_lm)
+
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(nebulae_lm)
+
+
+#dropping the intercept 
+nebulae_lm_b <- lm(Distance ~ Velocity -1, data = nebulae)
+summary(nebulae_lm_b)
+
+
+#plotting both regression lines 
+nebulae %>%
+  ggplot(aes( x= Distance, y =  Velocity)) +
+  geom_point() + 
+  geom_line(data = fortify(nebulae_lm), aes(x = Distance, y = .fitted))
+
+```
+
