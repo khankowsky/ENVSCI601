@@ -16,7 +16,7 @@ Hankowsky Homework Solutions
 
 # Basic Problems 
 ## 6.24
-```{r}
+```{r, eval = FALSE}
 #read in the data 
 orientation <- Sleuth3::ex0624
 
@@ -25,30 +25,186 @@ head(orientation)
 favstats(Volume ~ Group, data = orientation)
 
 
-#boxplot of cck activity by diagnosis
+#boxplot of INAH3 Volume by group
 orientation %>%
-  ggplot() + 
-  geom_boxplot(aes(x = Group, y = Volume, fill = Group)) + 
-  labs(title = "Boxplot of INAH3 Volume by Group", 
-       x = "", y = "INAH3 Volume") + 
+  ggplot() +
+  geom_boxplot(aes(x = Group, y = Volume, fill = Group)) +
+  labs(title = "Boxplot of INAH3 Volume by Group",
+       x = "", y = "INAH3 Volume") +
   theme_classic()
 
 
-#density plot of cck activity by diagnosis
+#log-transforming the data
+orientation <- orientation %>%
+  mutate(log_volume = log(Volume +1),
+         sqrt_volume = sqrt(Volume),
+         cube_volume = Volume^(1/3))
+
+
+boxplot of  transformed INAH3 Volume by group
 orientation %>%
-  ggplot() + 
-  geom_density(aes(x = Volume, group = Group, fill = Group), alpha = 0.4) + 
-  theme_classic() 
+  ggplot() +
+  geom_boxplot(aes(x = Group, y = cube_volume, fill = Group)) +
+  labs(title = "Boxplot of transformed INAH3 Volume by Group",
+       x = "", y = "INAH3 Volume") +
+  theme_classic()
 
 
-#running the anova 
+
+#density plot of INAH3 Volume by group
+orientation %>%
+  ggplot() +
+  geom_density(aes(x = Volume, group = Group, fill = Group), alpha = 0.4) +
+  theme_classic()
+
+
+#running the anova
 orientation_aov <- aov(Volume ~ Group, data = orientation)
 summary(orientation_aov)
 
 par(mfrow=c(2,2))
 plot(orientation_aov)
 
+
+#comparison of different groups
+TukeyHSD(orientation_aov)
+
+
+#looking at differences between heterosexual males v homosexual males
+orientation %>%
+  filter(Sex == "Male") %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Orientation, y = Volume, fill = Orientation)) + 
+  labs(title = "Boxplot of INAH3 Volume by Group", 
+       x = "", y = "INAH3 Volume") + 
+  theme_classic()
+
+
+orientation1 <- orientation %>%
+  filter(Sex == "Male")
+
+orientation1_aov <- aov(Volume ~ Orientation, data = orientation1)
+summary(orientation1_aov)
+
+par(mfrow=c(2,2))
+plot(orientation1_aov)
+
+
+
+#looking at differences between heterosexual males v heterosexual females
+orientation %>%
+  filter(Orientation == "Heterosexual") %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Sex, y = Volume, fill = Sex)) + 
+  labs(title = "Boxplot of INAH3 Volume by Group", 
+       x = "", y = "INAH3 Volume") + 
+  theme_classic()
+  
+
+orientation2 <- orientation %>%
+  filter(Orientation == "Heterosexual")
+
+orientation2_aov <- aov(Volume ~ Sex, data = orientation2)
+summary(orientation2_aov)
+
+par(mfrow=c(2,2))
+plot(orientation2_aov)
+  
+
+#looking at differences between homosexual males v heterosexual females
+orientation %>%
+  filter(Sex == "Male" & Orientation == "Homosexual" | Sex == "Female") %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Sex, y = Volume, fill = Sex)) + 
+  labs(title = "Boxplot of INAH3 Volume by Group", 
+       x = "", y = "INAH3 Volume") + 
+  theme_classic()
+
+orientation3 <- orientation %>%
+  filter(Sex == "Male" & Orientation == "Homosexual" | Sex == "Female")
+
+orientation3_aov <- aov(Volume ~ Sex, data = orientation3)
+summary(orientation3_aov)
+
+par(mfrow=c(2,2))
+plot(orientation3_aov)
+
 ```
+
+```{r}
+#read in the data 
+orientation <- Sleuth3::ex0624
+
+#looking at the dataframe and stats for each group 
+head(orientation)
+favstats(Volume ~ Group, data = orientation)
+
+#looking at differences between heterosexual males v homosexual males
+orientation %>%
+  filter(Sex == "Male") %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Orientation, y = Volume, fill = Orientation)) + 
+  labs(title = "Boxplot of INAH3 Volume by Group", 
+       x = "", y = "INAH3 Volume") + 
+  theme_classic()
+
+
+orientation1 <- orientation %>%
+  filter(Sex == "Male")
+
+orientation1_aov <- aov(Volume ~ Orientation, data = orientation1)
+summary(orientation1_aov)
+
+par(mfrow=c(2,2))
+plot(orientation1_aov)
+
+
+
+#looking at differences between heterosexual males v heterosexual females
+orientation %>%
+  filter(Orientation == "Heterosexual") %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Sex, y = Volume, fill = Sex)) + 
+  labs(title = "Boxplot of INAH3 Volume by Group", 
+       x = "", y = "INAH3 Volume") + 
+  theme_classic()
+  
+
+orientation2 <- orientation %>%
+  filter(Orientation == "Heterosexual")
+
+orientation2_aov <- aov(Volume ~ Sex, data = orientation2)
+summary(orientation2_aov)
+
+par(mfrow=c(2,2))
+plot(orientation2_aov)
+  
+
+#looking at differences between homosexual males v heterosexual females
+orientation %>%
+  filter(Sex == "Male" & Orientation == "Homosexual" | Sex == "Female") %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Sex, y = Volume, fill = Sex)) + 
+  labs(title = "Boxplot of INAH3 Volume by Group", 
+       x = "", y = "INAH3 Volume") + 
+  theme_classic()
+
+orientation3 <- orientation %>%
+  filter(Sex == "Male" & Orientation == "Homosexual" | Sex == "Female")
+
+orientation3_aov <- aov(Volume ~ Sex, data = orientation3)
+summary(orientation3_aov)
+
+par(mfrow=c(2,2))
+plot(orientation3_aov)
+
+```
+
+
+These data provide overwhelming evidence for a difference in mean INAH3 volume between heterosexual males and homosexual males (p-value < 0.001; analysis of variance F-test). These data provide inconclusive evidence of a difference in mean INAH3 volume between heterosexual males and heterosexual females (p-value = 0.03; analysis of variance F-test). These data provide no evidence for a difference in mean INAH3 volume between homosexual males and heterosexual females (p-value = 0.85; analysis of variance F-test). The variance shows some difference in spread for all three comparisons, however, the difference in spread is relatively minor and ANOVAs are relatively robust to small deviations in equal spread. 
+
+*Not sure I'm doing this the correct way, but I think I am answering all the questions correctly.*
+
 
 ***
 
@@ -79,13 +235,30 @@ neuron %>%
 #run the regression 
 neuron_lm <- lm(Activity ~ Years, data = neuron)
 summary(neuron_lm)
+anova(neuron_lm)
+
 
 #plot the diagnostics 
 par(mfrow=c(2,2))
 plot(neuron_lm)
+
+
+#plot the presentation graphic 
+par(mfrow=c(1,1))
+
+gf_point(Activity ~ Years, data = neuron) %>%
+  gf_lm(interval = "prediction") %>%
+  gf_lm(interval = "confidence", alpha = 0.5) + 
+  labs(title = "Brain Activity vs Number of Years Playing an Instrument",
+       y = "Brain Activity", x = "Number of Years") + 
+  theme_classic()
+  
 ```
 
+These data provide overwhelming evidence that the amount of brain activity is associated with the number of years an individual has been playing the instrument ($\beta$ = 0.99, p-value < 0.001). There is overwhelming evidence that the neuron activity is different in the stringed musicians than the controls (two-sided p-value < 0.001; for a test that the intercept is zero). The diagnostic plots show some concern about the assumption of normality, however, OLS regression is robust to this violation and it is likely due to the small sample size (n = 15). 
 
+
+***
 
 
 # Supplemental Problems 
@@ -103,26 +276,12 @@ favstats(Time ~ Compound, data = bearings)
 bearings %>%
   ggplot() + 
   geom_boxplot(aes(x = Compound, y = Time, fill = Compound)) + 
-  labs(title = "Boxplot of ", 
-       x = "", y = "Time") + 
+  labs(title = "Boxplot of Failure Times by Bearing Compund Type", 
+       x = "Bearing Compound", y = "Time") + 
   theme_classic()
 
 
-#log the response variable 
-bearings <- bearings %>%
-  mutate(log_time = log(Time))
-
-
-#boxplot of log(time) by compound
-bearings %>%
-  ggplot() + 
-  geom_boxplot(aes(x = Compound, y = log_time, fill = Compound)) + 
-  labs(title = "Boxplot of ", 
-       x = "", y = "Time") + 
-  theme_classic()
-
-
-#density plot of time b compound
+#density plot of time by compound
 bearings %>%
   ggplot() + 
   geom_density(aes(x = Time, group = Compound, fill = Compound), alpha = 0.4) + 
@@ -140,10 +299,11 @@ plot(bearing_aov)
 #comparison of different groups 
 TukeyHSD(bearing_aov)
 
-
-
-
 ```
+
+The boxplots show that the assumption of equal variance could be an issue, but there are equal sample sizes between the groups, so a one-way ANOVA was used to assess the the difference in failure times between bearings made from five different compounds. These data provide strong evidence that there is a difference in mean failure time between the different bearing compound types (p-value = 0.001; analysis of variance F-test). These data provide evidence for difference in failure times between three groups. There is strong evidence for a difference in failure times between the V compound and the II compound (p-value < 0.001, TukeyHSD). The mean failure time for the V group was 8.65 million cycles greater than the II compound (95 confidence interval: 2.98 to 14.34 million cycles). There is inconclusive evidence for a difference in failure times between the V compound and the III compound (p-value = 0.03, TukeyHSD). The mean failure time for the V group was 6.07 million cycles greater than the III compound (95 confidence interval: 0.39 to 11.75 million cycles). 
+
+
 
 ***
 
@@ -189,13 +349,32 @@ summary(nebulae_lm_b)
 
 
 #plotting both regression lines 
-nebulae %>%
-  ggplot(aes( x= Distance, y =  Velocity)) +
-  geom_point() + 
-  geom_line(data = fortify(nebulae_lm), aes(x = Distance, y = .fitted))
+par(mfrow=c(1,1))
+plot(Distance ~ Velocity, data = nebulae, 
+     xlab="Recession Velocity (km/sec)", 
+     ylab="Distance from Earth (megaparsecs)", 
+     main="Measured Distance Versus Velocity for 24 Extra-Galactic Nebulae", 
+     pch=21, lwd=2, bg="green", cex=1.5 )  
+abline(nebulae_lm, lty=2, col="blue", lwd=2) 
+abline(nebulae_lm_b, lty=3, col="red", lwd=2) 
+legend("topleft", 
+       c("unrestricted regression line","regression through the origin"),  
+       lty=c(2,3), lwd=c(2,2), col=c("blue","red")) 
 
 
 
+#calculating the age of the universe
+nebulae_lm$coefficients*979.8
+
+#confidence intervals
+confint(nebulae_lm, level = 0.95)
+confint(nebulae_lm, level = 0.95)*979.8
 
 ```
+
+If the theory is taken as correct, then the estimated age of the universe is 0.001642 megaparsecs-seconds per kilometer or about 1.61 billion years (95 confidence interval: 1.46 to 1.75 billion years). The data are consistent with with the Big Bang theory as proposed, the value of the line at velocity zero is apparently zero (two-sided p-value = 0.107, for a test that the intercept is zero). The diagnostic plots show some concern about the assumption of normality, however, OLS regression is robust to this violation and it is likely due to the small sample size (n = 10). 
+
+
+
+
 
