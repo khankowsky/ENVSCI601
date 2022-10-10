@@ -97,6 +97,51 @@ bearings <- Sleuth2::ex0621
 
 #looking at the dataframe and stats for each group 
 head(bearings)
+favstats(Time ~ Compound, data = bearings)
+
+#boxplot of time by compound 
+bearings %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Compound, y = Time, fill = Compound)) + 
+  labs(title = "Boxplot of ", 
+       x = "", y = "Time") + 
+  theme_classic()
+
+
+#log the response variable 
+bearings <- bearings %>%
+  mutate(log_time = log(Time))
+
+
+#boxplot of log(time) by compound
+bearings %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Compound, y = log_time, fill = Compound)) + 
+  labs(title = "Boxplot of ", 
+       x = "", y = "Time") + 
+  theme_classic()
+
+
+#density plot of time b compound
+bearings %>%
+  ggplot() + 
+  geom_density(aes(x = Time, group = Compound, fill = Compound), alpha = 0.4) + 
+  theme_classic() 
+
+
+#running the anova 
+bearing_aov <- aov(Time ~ Compound, data = bearings)
+summary(bearing_aov)
+
+par(mfrow=c(2,2))
+plot(bearing_aov)
+
+
+#comparison of different groups 
+TukeyHSD(bearing_aov)
+
+
+
 
 ```
 
@@ -148,6 +193,9 @@ nebulae %>%
   ggplot(aes( x= Distance, y =  Velocity)) +
   geom_point() + 
   geom_line(data = fortify(nebulae_lm), aes(x = Distance, y = .fitted))
+
+
+
 
 ```
 
