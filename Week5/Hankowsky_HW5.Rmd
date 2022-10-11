@@ -263,7 +263,7 @@ These data provide overwhelming evidence that the amount of brain activity is as
 
 # Supplemental Problems 
 
-## 6.24(Sleuth 2nd Edition)
+## 6.21(Sleuth 2nd Edition)
 ```{r}
 #read in data
 bearings <- Sleuth2::ex0621
