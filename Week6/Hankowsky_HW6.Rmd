@@ -1,0 +1,186 @@
+---
+title: "Hankowsky_HW6"
+author: "Keith Hankowsky"
+date: '2022-10-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 8.28
+```{r}
+#read in data
+income <- Sleuth3::ex0828
+
+#looking at the dataframe and stats for each group 
+head(income)
+
+#creating variables for the mean of each education group 
+income <- income %>%
+  group_by(Educ) %>%
+  mutate(afqt_mean = mean(AFQT), 
+         afqt_sd = sd(AFQT), 
+         income2005_mean = mean(Income2005), 
+         income2005_sd = sd(Income2005))
+
+#plot the AFQT score as a function of education 
+income %>%
+  ggplot() + 
+  geom_jitter(aes( x= Educ, y =  AFQT)) + 
+  theme_classic()
+
+#plot the AFQT score as a function of education with group means
+income %>%
+  ggplot() + 
+  geom_jitter(aes( x= Educ, y =  AFQT), alpha = 0.4) + 
+  geom_point(aes(x = Educ, y = afqt_mean), size = 4, 
+             color = "red", shape = 18) + 
+  geom_line(aes(x = Educ, y = afqt_mean), color = "red") + 
+  geom_errorbar(aes(x = Educ, y = afqt_mean, 
+                    ymin = afqt_mean-afqt_sd, ymax = afqt_mean+afqt_sd), 
+                color = "red") + 
+  theme_classic()
+
+#plot it again with the regression line and smooth 
+income %>%
+  ggplot(aes( x= Educ, y =  AFQT)) +
+  geom_jitter(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  theme_classic()
+
+#run the regression 
+income_lm <- lm(AFQT ~ Educ, data = income)
+summary(income_lm)
+anova(income_lm)
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(income_lm)
+
+#plot the presentation graphic 
+par(mfrow=c(1,1))
+gf_point(AFQT ~ Educ, data = income) %>%
+  gf_lm(interval = "prediction") %>%
+  gf_lm(interval = "confidence", alpha = 0.5) + 
+  labs(title = "AFQT Score vs Years of Education",
+       y = "AFQT Score", x = "Years of Education") + 
+  theme_classic()
+
+
+###############################################################################
+
+#plot the 2005 income as a function of education 
+income %>%
+  ggplot() + 
+  geom_jitter(aes( x= Educ, y =  Income2005)) + 
+  theme_classic()
+
+#plot the AFQT score as a function of education with group means
+income %>%
+  ggplot(aes( x= Educ, y =  Income2005)) + 
+  geom_jitter(alpha = 0.4) + 
+  stat_summary(fun = "mean", colour = "red", size = 2, geom = "point") + 
+  stat_summary(fun = "mean", colour = "red", geom = "line") + 
+  stat_summary(fun = mean,
+               geom = "errorbar",
+               fun.max = function(x) mean(x) + sd(x),
+               fun.min = function(x) mean(x) - sd(x), col = "red")
+  
+  geom_point(aes(x = Educ, y = income2005_mean), size = 4, 
+             color = "firebrick2", shape = 18) + 
+  geom_line(aes(x = Educ, y = income2005_mean), color = "firebrick2") + 
+  geom_errorbar(aes(x = Educ, y = income2005_mean, 
+                    ymin = income2005_mean-income2005_sd, 
+                    ymax = income2005_mean+income2005_sd), 
+                color = "firebrick2") + 
+  theme_classic()
+
+#plot it again with the regression line and smooth 
+income %>%
+  ggplot(aes( x= Educ, y =  Income2005)) +
+  geom_jitter(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  theme_classic()
+
+#run the regression 
+income_lm2 <- lm(Income2005 ~ Educ, data = income)
+summary(income_lm2)
+anova(income_lm2)
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(income_lm2)
+
+#plot the presentation graphic 
+par(mfrow=c(1,1))
+gf_point(Income2005 ~ Educ, data = income) %>%
+  gf_lm(interval = "prediction") %>%
+  gf_lm(interval = "confidence", alpha = 0.5) + 
+  labs(title = "2005 Income vs Years of Education",
+       y = "2005 Income", x = "Years of Education") + 
+  theme_classic()
+  
+```
+
+
+***
+
+
+## 9.21
+```{r}
+#read in data
+
+
+```
+
+
+***
+
+
+# Supplemental Problems 
+
+## 8.26
+```{r}
+#read in data
+mammals <- Sleuth3::ex0826
+
+#looking at the dataframe and stats for each group 
+head(mammals)
+
+#plot the metabolic rate by mass 
+mammals %>%
+  ggplot() + 
+  geom_point(aes( x = Mass, y =  Metab)) + 
+  theme_classic()
+
+#plot it again with the regression line and smooth 
+mammals %>%
+  ggplot(aes( x = Mass, y =  Metab)) +
+  geom_jitter(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  theme_classic()
+```
+
+
+***
+
+
+## 9.23
+```{r}
+#read in data
+
+
+```
+
