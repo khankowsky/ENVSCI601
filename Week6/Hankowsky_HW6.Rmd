@@ -24,44 +24,37 @@ income <- Sleuth3::ex0828
 #looking at the dataframe and stats for each group 
 head(income)
 
-#creating variables for the mean of each education group 
-income <- income %>%
-  group_by(Educ) %>%
-  mutate(afqt_mean = mean(AFQT), 
-         afqt_sd = sd(AFQT), 
-         income2005_mean = mean(Income2005), 
-         income2005_sd = sd(Income2005))
-
 #plot the AFQT score as a function of education 
 income %>%
   ggplot() + 
-  geom_jitter(aes( x= Educ, y =  AFQT)) + 
+  geom_jitter(aes(x = AFQT, y =  Income2005)) + 
   theme_classic()
 
 #plot the AFQT score as a function of education with group means
 income %>%
-  ggplot() + 
-  geom_jitter(aes( x= Educ, y =  AFQT), alpha = 0.4) + 
-  geom_point(aes(x = Educ, y = afqt_mean), size = 4, 
-             color = "red", shape = 18) + 
-  geom_line(aes(x = Educ, y = afqt_mean), color = "red") + 
-  geom_errorbar(aes(x = Educ, y = afqt_mean, 
-                    ymin = afqt_mean-afqt_sd, ymax = afqt_mean+afqt_sd), 
-                color = "red") + 
+  ggplot(aes(x = AFQT, y =  Income2005)) + 
+  geom_jitter(alpha = 0.4) + 
+  stat_summary(fun = "mean", colour = "red", size = 2, geom = "point") + 
+  stat_summary(fun = "mean", colour = "red", geom = "line") + 
+  stat_summary(fun = mean,
+               geom = "errorbar",
+               fun.max = function(x) mean(x) + sd(x),
+               fun.min = function(x) mean(x) - sd(x), col = "red") + 
   theme_classic()
 
 #plot it again with the regression line and smooth 
 income %>%
-  ggplot(aes( x= Educ, y =  AFQT)) +
+  ggplot(aes(x = AFQT, y =  Income2005)) +
   geom_jitter(alpha = 0.6) + 
   geom_smooth(method = "lm", se = F) + 
   geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
   theme_classic()
 
 #run the regression 
-income_lm <- lm(AFQT ~ Educ, data = income)
+income_lm <- lm(Income2005 ~ AFQT, data = income)
 summary(income_lm)
 anova(income_lm)
+
 
 #plot the diagnostics 
 par(mfrow=c(2,2))
@@ -69,45 +62,48 @@ plot(income_lm)
 
 #plot the presentation graphic 
 par(mfrow=c(1,1))
-gf_point(AFQT ~ Educ, data = income) %>%
+gf_jitter(Income2005 ~ AFQT, data = income) %>%
   gf_lm(interval = "prediction") %>%
   gf_lm(interval = "confidence", alpha = 0.5) + 
-  labs(title = "AFQT Score vs Years of Education",
-       y = "AFQT Score", x = "Years of Education") + 
+  labs(title = "2005 Income vs AFQT Score",
+       y = "2005 Income", x = "AFQT Score") + 
+  geom_text(aes(7,600000, label = paste("R2 = ", signif(rsquared(income_lm), 3), "\n", 
+                                     "Intercept =",signif(income_lm$coef[[1]], 4), "\n",
+                                     " Slope =",signif(income_lm$coef[[2]], 4)))) + 
   theme_classic()
 
 
+  
+```
+
+These data provide overwhelming evidence that the 2005 income is associated with the IQ test score (AFQT score) ($\beta$ = 518.68, p-value < 0.0001). The IQ test score explained 9% of the variance in the 2005 income ($R^2$ = 0.0949). 
+
+
+```{r}
 ###############################################################################
 
 #plot the 2005 income as a function of education 
 income %>%
   ggplot() + 
-  geom_jitter(aes( x= Educ, y =  Income2005)) + 
+  geom_jitter(aes(x = Educ, y =  Income2005)) + 
   theme_classic()
 
 #plot the AFQT score as a function of education with group means
 income %>%
-  ggplot(aes( x= Educ, y =  Income2005)) + 
+  ggplot(aes(x = Educ, y =  Income2005)) + 
   geom_jitter(alpha = 0.4) + 
   stat_summary(fun = "mean", colour = "red", size = 2, geom = "point") + 
   stat_summary(fun = "mean", colour = "red", geom = "line") + 
   stat_summary(fun = mean,
                geom = "errorbar",
                fun.max = function(x) mean(x) + sd(x),
-               fun.min = function(x) mean(x) - sd(x), col = "red")
-  
-  geom_point(aes(x = Educ, y = income2005_mean), size = 4, 
-             color = "firebrick2", shape = 18) + 
-  geom_line(aes(x = Educ, y = income2005_mean), color = "firebrick2") + 
-  geom_errorbar(aes(x = Educ, y = income2005_mean, 
-                    ymin = income2005_mean-income2005_sd, 
-                    ymax = income2005_mean+income2005_sd), 
-                color = "firebrick2") + 
+               fun.min = function(x) mean(x) - sd(x), col = "red") + 
   theme_classic()
+  
 
 #plot it again with the regression line and smooth 
 income %>%
-  ggplot(aes( x= Educ, y =  Income2005)) +
+  ggplot(aes(x = Educ, y =  Income2005)) +
   geom_jitter(alpha = 0.6) + 
   geom_smooth(method = "lm", se = F) + 
   geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
@@ -130,9 +126,9 @@ gf_point(Income2005 ~ Educ, data = income) %>%
   labs(title = "2005 Income vs Years of Education",
        y = "2005 Income", x = "Years of Education") + 
   theme_classic()
-  
 ```
 
+Investigation of the means of sub-group distributions shows a straight line regression would be appropriate, but the variability increases as the mean of 2005 income increases. A weighted regression would be appropriate for this situation, however, those are not covered in the Slueth book until chapter 11, so a simple linear regression was conducted. These data provide overwhelming evidence that the 2005 income is associated with the number of years of education ($\beta$ = 6451.5, p-value < 0.0001). The number of years of education explained 12% of the variance in the 2005 income ($R^2$ = 0.1195). 
 
 ***
 
@@ -158,20 +154,73 @@ mammals <- Sleuth3::ex0826
 #looking at the dataframe and stats for each group 
 head(mammals)
 
+#transforming the data as described in the question 
+mammals <- mammals %>%
+  mutate(mass_3 = (Mass^(3/4)))
+
 #plot the metabolic rate by mass 
 mammals %>%
   ggplot() + 
   geom_point(aes( x = Mass, y =  Metab)) + 
+  labs(title = "Metabolic Rate v Mass", 
+       x = "Mass (kg)", y = "Average Basal Metabolic Rate (kJ/Day)") + 
   theme_classic()
 
 #plot it again with the regression line and smooth 
 mammals %>%
   ggplot(aes( x = Mass, y =  Metab)) +
-  geom_jitter(alpha = 0.6) + 
+  geom_point(alpha = 0.6) + 
   geom_smooth(method = "lm", se = F) + 
   geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  labs(title = "Metabolic Rate v Mass", 
+       x = "Mass (kg)", y = "Average Basal Metabolic Rate (kJ/Day)") + 
   theme_classic()
+
+
+#plot the metabolic rate by mass_3
+mammals %>%
+  ggplot() + 
+  geom_point(aes( x = mass_3, y =  Metab)) + 
+  labs(title = "Metabolic Rate v Mass", 
+       x = expression(paste(Mass^(3/4), "(kg)")), 
+       y = "Average Basal Metabolic Rate (kJ/Day)") + 
+  theme_classic()
+
+#plot it again with the regression line and smooth 
+mammals %>%
+  ggplot(aes( x = mass_3, y =  Metab)) +
+  geom_point(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  labs(title = "Metabolic Rate v Mass", 
+       x = expression(paste(Mass^(3/4), "(kg)")), 
+       y = "Average Basal Metabolic Rate (kJ/Day)") + 
+  theme_classic()
+
+#run the regression 
+mammals_lm <- lm(Metab ~ mass_3, data = mammals)
+summary(mammals_lm)
+anova(mammals_lm)
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(mammals_lm)
+
+#plot the presentation graphic 
+par(mfrow=c(1,1))
+gf_point(Metab ~ mass_3, data = mammals) %>%
+  gf_lm(interval = "prediction") %>%
+  gf_lm(interval = "confidence", alpha = 0.5) + 
+  labs(title = "Metabolic Rate v Mass",
+       y = "Average Basal Metabolic Rate (kJ/Day)", 
+       x = expression(paste(Mass^(3/4), "(kg)"))) + 
+  geom_text(aes(30,150000, label = paste("R2 = ", signif(rsquared(mammals_lm), 3), "\n", 
+                                     "Intercept =",signif(mammals_lm$coef[[1]], 4), "\n",
+                                     " Slope =",signif(mammals_lm$coef[[2]], 4)))) + 
+  theme_classic()
+
 ```
+These data provide overwhelming evidence that the metabolic rate is associated with the average mass raised to the power of 3/4 in mammals ($\beta$ = 395.02, p-value < 0.0001). The average mass raised to the power of 3/4 explained 99% of the variance in the metabolic rate ($R^2$ = 0.989). Based on these data, there is strong justification that Kleiber's Law holds true for mammal species, however, it would not be appropriate to generalize that claim to all animal species from this dataset. 
 
 
 ***
