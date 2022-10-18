@@ -1,0 +1,604 @@
+---
+title: "Hankowsky_HW6"
+author: "Keith Hankowsky"
+date: '2022-10-11'
+output: html_document
+---
+
+<span style="color: magenta"> **General Comments [Gallagher's comments in magenta]:** I just had to add the master problem file to your working directory, and your rmd knitted perfectly.  Your solutions were tremendous earning a perfect score. I just had a couple of minor quibbles. I've analyzed the Cammen data about 200 times over the years, but I've never left the interaction term in. It is informative to leave it in, although it does screw up the nearly perfect allometric 3/4 power law. **Basic score (5+5)/10, Supplemental Score (2.5+2.5)/5 Master 5/5 Total score 20/10** </span>
+
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+library(GGally)
+library(gridExtra)
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 8.28
+```{r}
+#read in data
+income <- Sleuth3::ex0828
+
+#looking at the dataframe
+head(income)
+
+#plot the 2005 income as a function of AFQT score
+income %>%
+  ggplot() + 
+  geom_jitter(aes(x = AFQT, y =  Income2005)) + 
+  theme_classic()
+
+#plot the 2005 income as a function of AFQT score with group means
+# income %>%
+#   ggplot(aes(x = AFQT, y =  Income2005)) + 
+#   geom_jitter(alpha = 0.4) + 
+#   stat_summary(fun = "mean", colour = "red", size = 2, geom = "point") + 
+#   stat_summary(fun = "mean", colour = "red", geom = "line") + 
+#   stat_summary(fun = mean,
+#                geom = "errorbar",
+#                fun.max = function(x) mean(x) + sd(x),
+#                fun.min = function(x) mean(x) - sd(x), col = "red") + 
+#   theme_classic()
+
+#plot it again with the regression line and smooth 
+income %>%
+  ggplot(aes(x = AFQT, y =  Income2005)) +
+  geom_jitter(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  theme_classic()
+
+#run the regression 
+income_lm <- lm(Income2005 ~ AFQT, data = income)
+summary(income_lm)
+anova(income_lm)
+
+confint(income_lm)
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(income_lm)
+
+###############################################################################
+
+#log transform the data because of the trumpetting in the residual plot
+income <- income %>%
+  mutate(log_income = log(Income2005))
+
+#plot the log(2005 income) as a function of AFQT score
+income %>%
+  ggplot() + 
+  geom_jitter(aes(x = AFQT, y =  log_income)) + 
+  theme_classic()
+
+#plot it again with the regression line and smooth 
+income %>%
+  ggplot(aes(x = AFQT, y =  log_income)) +
+  geom_jitter(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  theme_classic()
+
+#run the regression 
+income_lmb <- lm(log_income ~ AFQT, data = income)
+summary(income_lmb)
+anova(income_lmb)
+
+confint(income_lmb)
+
+#back-transform the estimates 
+exp(income_lmb$coefficients)
+exp(confint(income_lmb))
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(income_lmb)
+
+
+#plot the presentation graphic 
+par(mfrow=c(1,1))
+gf_jitter(log_income ~ AFQT, data = income) %>%
+  gf_lm(interval = "prediction") %>%
+  gf_lm(interval = "confidence", alpha = 0.5) + 
+  labs(title = "Log(2005 Income) vs AFQT Score",
+       y = "Log(2005 Income)", x = "AFQT Score") + 
+  # geom_text(aes(7,600000, label = paste("R2 = ", signif(rsquared(income_lm), 3), "\n", 
+  #                                    "Intercept =",signif(income_lm$coef[[1]], 4), "\n",
+  #                                    " Slope =",signif(income_lm$coef[[2]], 4)))) + 
+  theme_classic()
+
+
+  
+```
+
+<br>
+
+The residual diagnostic plot of the raw 2005 income as a function of AFQT score showed a pattern of trumpeting, so a log transformation was conducted. The diagnostics plots of the log-transformed income have no problematic trends, so the interpretation of the regression was performed with the log-transformed income data. These data provide overwhelming evidence that the 2005 income is associated with the IQ test score (AFQT score) ($\beta$ = 1.01, p-value < 0.0001). The IQ test score explained 9% of the variance in the 2005 income ($R^2$ = 0.088). The mean salary increases 1.01 times for each increase in AFQT scores (95% confidence intervals: 1.01 to 1.01). 
+
+
+<br>
+<br>
+
+```{r}
+#plot the 2005 income as a function of education 
+income %>%
+  ggplot() + 
+  geom_jitter(aes(x = Educ, y =  Income2005)) + 
+  theme_classic()
+
+#plot the 2005 income as a function of education with group means
+income %>%
+  ggplot(aes(x = Educ, y =  Income2005)) + 
+  geom_jitter(alpha = 0.4) + 
+  stat_summary(fun = "mean", colour = "red", size = 2, geom = "point") + 
+  stat_summary(fun = "mean", colour = "red", geom = "line") + 
+  stat_summary(fun = mean,
+               geom = "errorbar",
+               fun.max = function(x) mean(x) + sd(x),
+               fun.min = function(x) mean(x) - sd(x), col = "red") + 
+  theme_classic()
+  
+
+#plot it again with the regression line and smooth 
+income %>%
+  ggplot(aes(x = Educ, y =  Income2005)) +
+  geom_jitter(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  theme_classic()
+
+#run the regression 
+income_lm2 <- lm(Income2005 ~ Educ, data = income)
+summary(income_lm2)
+anova(income_lm2)
+
+confint(income_lm2)
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(income_lm2)
+
+###############################################################################
+
+#plot the log(2005 income) as a function of education 
+income %>%
+  ggplot() + 
+  geom_jitter(aes(x = Educ, y =  log_income)) + 
+  theme_classic()
+
+#plot the log(2005 income) as a function of education with group means
+income %>%
+  ggplot(aes(x = Educ, y =  log_income)) + 
+  geom_jitter(alpha = 0.4) + 
+  stat_summary(fun = "mean", colour = "red", size = 2, geom = "point") + 
+  stat_summary(fun = "mean", colour = "red", geom = "line") + 
+  stat_summary(fun = mean,
+               geom = "errorbar",
+               fun.max = function(x) mean(x) + sd(x),
+               fun.min = function(x) mean(x) - sd(x), col = "red") + 
+  theme_classic()
+  
+
+#plot it again with the regression line and smooth 
+income %>%
+  ggplot(aes(x = Educ, y =  log_income)) +
+  geom_jitter(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  theme_classic()
+
+#run the regression 
+income_lm2b <- lm(log_income ~ Educ, data = income)
+summary(income_lm2b)
+anova(income_lm2b)
+
+confint(income_lm2b)
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(income_lm2b)
+
+#back-transform the estimates 
+exp(income_lm2b$coefficients)
+exp(confint(income_lm2b))
+
+
+#plot the presentation graphic 
+par(mfrow=c(1,1))
+gf_jitter(log_income ~ Educ, data = income) %>%
+  gf_lm(interval = "prediction") %>%
+  gf_lm(interval = "confidence", alpha = 0.5) + 
+  labs(title = "Log(2005 Income) vs Years of Education",
+       y = "Log(2005 Income)", x = "Years of Education") + 
+  theme_classic()
+```
+
+<br>
+
+Investigation of the means of sub-group distributions shows a straight line regression would be appropriate, but the variability increases as the mean of 2005 income increases. A weighted regression would be appropriate for this situation, however, those are not covered in the Slueth book until chapter 11, so a simple linear regression was conducted. The residual diagnostic plot of the raw 2005 income as a function of years of education showed a pattern of trumpeting, so a log transformation was conducted. The diagnostics plots of the log-transformed income have no problematic trends, so the interpretation of the regression was performed with the log-transformed income data. These data provide overwhelming evidence that the 2005 income is associated with the number of years of education ($\beta$ = 1.12, p-value < 0.0001). The number of years of education explained 8% of the variance in the 2005 income ($R^2$ = 0.0082). The mean salary increases 1.12 times for each increase in year of education (95% confidence intervals: 1.10 to 1.13). 
+
+<span style="color: magenta"> **Basic 8.28_3rd** Your answer was superb!  I agree with you about the need for the weighted regression, but you rarely see weighted regression (generalized least squares) in papers, even though it easy to do in R. I love your ggplot graphics, so much nicer than the base graphs that I use. **score 5/5** </span>
+
+***
+
+
+## 9.21
+```{r}
+#read in data
+deposit_feeders <- Sleuth3::ex0921
+
+#looking at the dataframe
+head(deposit_feeders)
+
+#transforming the data as suggested in the exercise
+deposit_feeders <- deposit_feeders %>%
+  mutate(log_weight = log(Weight +1), 
+         log_ingestion = log(Ingestion +1), 
+         log_organic = log(Organic +1))
+
+#looking at scatterplots of the variables
+ggpairs(deposit_feeders, columns = 5:7)
+
+#run the mutiple regression 
+deposit_feeders_lm <- lm(log_ingestion ~ log_weight + log_organic + log_weight:log_organic, data = deposit_feeders)
+summary(deposit_feeders_lm)
+
+confint(deposit_feeders_lm)
+
+#back-transform the estimates 
+exp(deposit_feeders_lm$coefficients)
+exp(confint(deposit_feeders_lm))
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(deposit_feeders_lm)
+
+#plot the presentation graphic
+
+
+```
+
+<br>
+
+These data provide strong evidence that the ingestion rate of deposit feeders is associated with the percentage of organic matter in the food after accounting for the effect of species weight (p-value < 0.0001, multiple regression). These data also provide overwhelming evidence the the ingestion rate of deposit feeders is associated with the species weight after accounting for the percentage of organic matter in the food (p-value < 0.0001, multiple regression). However, there is no evidence of an interaction between the percentage of organic matter in the food and the species weight (p-value = 0.82, multiple regression). 
+
+<span style="color: magenta"> **Basic 9.21_3rd** Excellent answer, with one minor quibble. It is not a problem that your final model included the interaction term. As I'll discuss on Tuesday, Frank Harrell's approach to Regression Modeling Strategies (he wrote the 2015 book and RMS package) argues that one should not automatically drop terms with p-values greater than 0.05. That can lead to overfitting, and sometimes, as in your case, the interaction term is informative. However, you misinterpreted the meaning of the interaction term in this case. Whether it is in or out of the model, the relationship between log(ingestion) vs log(organic matter) is about -1, so a doubling of organic matter in the food leads to a reduction by 50% of the ingestion rate. The interaction term with a value of -0.13 says that larger deposit feeders ingest just a little bit less for a given increase in organic matter than smaller deposit feeders. Cammen's (1980) literature review produced some classic allometric patterns. Without the interaction term the body weight coefficient with ingestion is almost exactly 0.75, the classic 3/4 value, and the 95% CI doesn't include 2/3. With the interaction term, the exponent is not 3/4 but 0.9 with a large CI that includes 2/3. This larger CI is due to the variance inflation factor due to leaving in the interaction term. Now, the Sleuth authors and many statisticians would probably take off a point for including a 'non-significant' interaction term in your final model, but they would be wrong. Harrell's RMS philosophy is to decide in advance the relevant terms in your model, determine if you have the degrees of freedom to fit the model, then spend those df to fit the model, and report the results. You did that. **score 5/5** </span>
+
+***
+
+
+# Supplemental Problems 
+
+## 8.26
+```{r}
+#read in data
+mammals <- Sleuth3::ex0826
+
+#looking at the dataframe
+head(mammals)
+
+#transforming the data as described in the question 
+mammals <- mammals %>%
+  mutate(mass_3 = (Mass^(3/4)), 
+         log_metab = log(Metab), 
+         log_mass = log(Mass))
+
+#plot the metabolic rate by mass 
+mammals %>%
+  ggplot() + 
+  geom_point(aes( x = Mass, y =  Metab)) + 
+  labs(title = "Metabolic Rate v Mass", 
+       x = "Mass (kg)", y = "Average Basal Metabolic Rate (kJ/Day)") + 
+  theme_classic()
+
+#plot it again with the regression line and smooth 
+mammals %>%
+  ggplot(aes( x = Mass, y =  Metab)) +
+  geom_point(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  labs(title = "Metabolic Rate v Mass", 
+       x = "Mass (kg)", y = "Average Basal Metabolic Rate (kJ/Day)") + 
+  theme_classic()
+
+
+# #plot the metabolic rate by mass_3
+# mammals %>%
+#   ggplot() + 
+#   geom_point(aes( x = mass_3, y =  Metab)) + 
+#   labs(title = expression("Average Basal Metabolic Rate (kJ/Day) v Mass"^(3/4)* "(kg)"), 
+#        x = expression(paste(Mass^(3/4), "(kg)")), 
+#        y = "Average Basal Metabolic Rate (kJ/Day)") + 
+#   theme_classic()
+# 
+# #plot it again with the regression line and smooth 
+# mammals %>%
+#   ggplot(aes( x = mass_3, y =  Metab)) +
+#   geom_point(alpha = 0.6) + 
+#   geom_smooth(method = "lm", se = F) + 
+#   geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+#   labs(title = expression("Average Basal Metabolic Rate (kJ/Day) v Mass"^(3/4)* "(kg)"),
+#        x = expression(paste(Mass^(3/4), "(kg)")), 
+#        y = "Average Basal Metabolic Rate (kJ/Day)") + 
+#   theme_classic()
+
+#plot the metabolic rate by mass 
+mammals %>%
+  ggplot() + 
+  geom_point(aes( x = log_mass, y =  log_metab)) + 
+  labs(title = "Log(Metabolic Rate) v Log(Mass)", 
+       x = "Log(Mass (kg))", y = "Log(Average Basal Metabolic Rate (kJ/Day))") + 
+  theme_classic()
+
+#plot it again with the regression line and smooth 
+mammals %>%
+  ggplot(aes( x = log_mass, y =  log_metab)) +
+  geom_point(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) + 
+  geom_smooth(method = stats::loess, se = FALSE, col = "red", lty = 2) + 
+  labs(title = "Log(Metabolic Rate) v Log(Mass)", 
+       x = "Log(Mass (kg))", y = "Log(Average Basal Metabolic Rate (kJ/Day))") + 
+  theme_classic()
+
+
+#run the regression 
+mammals_lm <- lm(log_metab ~ log_mass, data = mammals)
+summary(mammals_lm)
+anova(mammals_lm)
+
+confint(mammals_lm)
+
+#back-transform the estimates 
+exp(mammals_lm$coefficients)
+exp(confint(mammals_lm))
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(mammals_lm)
+
+#plot the presentation graphic 
+par(mfrow=c(1,1))
+gf_point(log_metab ~ log_mass, data = mammals) %>%
+  gf_lm(interval = "prediction") %>%
+  gf_lm(interval = "confidence", alpha = 0.5) + 
+  labs(title = expression("Log(Average Basal Metabolic Rate (kJ/Day)) v Log(Mass (kg))"),
+       y = "Log(Average Basal Metabolic Rate (kJ/Day))", 
+       x = "Log(Mass (kg))") + 
+  # geom_text(aes(5,5, label = paste("R2 = ", signif(rsquared(mammals_lm), 3), "\n", 
+  #                                    "Intercept =",signif(mammals_lm$coef[[1]], 4), "\n",
+  #                                    " Slope =",signif(mammals_lm$coef[[2]], 4)))) + 
+  theme_classic()
+
+```
+
+<br>
+
+The loess smooth of the scatterplot of the raw metabolic rate and average mass demonstrated the need for a log-transformation. A log-transformation was conducted and the simple linear regression was conducted on the log-transformed data. These data provide overwhelming evidence that the metabolic rate is associated with the average mass in mammals ($\beta$ = 2.09, p-value < 0.0001). The average mass raised to the power of 3/4 explained 97% of the variance in the metabolic rate ($R^2$ = 0.965). Based on these data, there is strong justification that Kleiber's Law holds true for mammal species, however, it would not be appropriate to generalize that claim to all animal species from this dataset. The mean metabolic rate increases 2.09 times for each increase in mass (95% confidence interval: 2.03 to 2.15 times). 
+
+<span style="color: magenta"> **Supplemental 8.26_3rd** Excellent answer with one quibble. You missed the scaling of the allometric exponent of 0.75. To report to the layman, you'd want to report that with a doubling in body mass, metabolic rate increases by 67% with a 95% CI of 63% to 71%: 2^c(.7097, 0.7387,0.7677)=
+[ 1.635464 1.668672 1.702553 **Score 2.5/2.5** </span>
+
+
+***
+
+
+## 9.23
+```{r}
+#read in data
+incomeb <- Sleuth3::ex0923
+
+#looking at the dataframe
+head(incomeb)
+
+#looking at scatterplots of the variables
+p91 <- incomeb %>%
+  ggplot() + 
+  geom_jitter(aes(x = Educ, y = Income2005, color = Gender, shape = Gender), 
+              alpha = 0.4) + 
+  labs(title = "2005 Income v Years of Education", 
+       x = "Years of Education", y = "2005 Income ($)") + 
+  theme_classic() +
+  theme(legend.position = c(0.2, 0.85))
+
+p92 <- incomeb %>%
+  ggplot() + 
+  geom_jitter(aes(x = AFQT, y = Income2005, color = Gender, shape = Gender), 
+              alpha = 0.4) + 
+  labs(title = "2005 Income v AFQT Scores", 
+       x = "AFQT Score", y = "2005 Income ($)") + 
+  theme_classic() + 
+  theme(legend.position = c(0.2, 0.85))
+
+
+grid.arrange(p91, p92, ncol=2)
+
+
+#run the mutiple regression 
+incomeb_lm <- lm(Income2005 ~ Gender + AFQT + Educ, data = incomeb)
+summary(incomeb_lm)
+
+confint(incomeb_lm)
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(incomeb_lm)
+
+###############################################################################
+#log transform the data because of the trumpetting in the residual plot
+incomeb <- incomeb %>%
+  mutate(log_income = log(Income2005))
+
+#looking at scatterplots of the variables
+p91 <- incomeb %>%
+  ggplot() + 
+  geom_jitter(aes(x = Educ, y = log_income, color = Gender, shape = Gender), 
+              alpha = 0.4) + 
+  labs(title = "Log(2005 Income) v Years of Education", 
+       x = "Years of Education", y = "Log(2005 Income ($))") + 
+  theme_classic() +
+  theme(legend.position = "bottom")
+
+p92 <- incomeb %>%
+  ggplot() + 
+  geom_jitter(aes(x = AFQT, y = log_income, color = Gender, shape = Gender), 
+              alpha = 0.4) + 
+  labs(title = "Log(2005 Income) v AFQT Scores", 
+       x = "AFQT Score", y = "Log(2005 Income ($))") + 
+  theme_classic() + 
+  theme(legend.position = "bottom")
+
+
+grid.arrange(p91, p92, ncol=2)
+
+
+#run the mutiple regression 
+incomeb_lmb <- lm(log_income ~ Gender + AFQT + Educ, data = incomeb)
+summary(incomeb_lmb)
+
+confint(incomeb_lmb)
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(incomeb_lmb)
+
+#back-transform the estimates 
+exp(incomeb_lmb$coefficients)
+exp(confint(incomeb_lmb))
+
+
+#plot the presentation graphic 
+incomeb %>%
+  ggplot(aes(x = Educ, y = log_income, color = Gender, shape = Gender)) + 
+  geom_jitter(alpha = 0.4) + 
+  geom_smooth(method = "lm", se = T) + 
+  labs(title = "Effect of Gender and Years of Education on 2005 Income",
+    x = "Years of Education", y = "2005 Income") + 
+  theme_classic()
+
+```
+
+<br>
+
+The residual diagnostic plot of the raw 2005 income as a function of AFQT score, years of education, and gender showed a pattern of trumpeting, so a log transformation was conducted. The diagnostics plots of the log-transformed income have no problematic trends, so the interpretation of the regression was performed with the log-transformed income data. There is overwhelming evidence that the mean salary for males exceeds the mean salary for females with the same years of education and AFQT scores (p-value < 0.0001, multiple regression). The mean salary for males is 1.87 times greater than the mean salary for females with the same years of education and AFQT scores (95% confidence intervals: 1.75 to 1.99). 
+
+<span style="color: magenta"> **Supplemental 9.23_3rd** Excellent answer with beautiful graphics (you missed the label for log income on the last graph). In Ogle's code I came across a ggplot scaling function that allows the straight-line plot but rescales the Y (or X axis) so that it is logarithmic. You can read off the actual salaries instead of trying to do antilogarithms to interpret the results. **score 2.5/2.5** </span>
+
+
+***
+
+
+# Master Problem 
+```{r}
+library(FSA)
+library(car)      
+library(magrittr)
+library(dplyr)
+
+#read-in data 
+ruf <- read.csv("RuffeSLRH.csv") 
+
+#transforming the data
+ruf <- ruf %>%
+  filter(month == 7) %>%
+  mutate(logW = log10(wt), 
+         logL = log10(tl)) %>%
+  select(-fishID, -day)
+  
+#looking at the dataframe
+headtail(ruf)
+
+#filter for just select years and creating seperate datasets 
+ruf90 <- ruf %>%
+  filter(year == 1990)
+
+ruf9000 <- ruf %>%
+  filter(year %in% c(1990,2000))
+
+#creating the figures from chapter 7
+pm1 <- ruf90 %>%
+  ggplot() + 
+  geom_point(aes(x = tl, y = wt)) + 
+  labs(x = "Total Length (mm)", y =  "Weight (g)" ) + 
+  theme_classic()
+
+pm2 <- ruf90 %>%
+  ggplot() + 
+  geom_point(aes(x = logL, y = logW)) + 
+  labs(x = "Log(Total Length)", y =  "Log(Weight)" ) + 
+  theme_classic()
+
+grid.arrange(pm1, pm2, ncol=2)
+
+#fitting the regression 
+ruf_lm <- lm(logW ~ logL, data = ruf90)
+summary(ruf_lm)
+anova(ruf_lm)
+
+#back-transform the estimates 
+exp(ruf_lm$coefficients)
+exp(confint(ruf_lm))
+
+
+
+##################stealing the rest of the code from his website ##############
+lens <- c(100,160)                  # vector of lengths
+nd <- data.frame(logL=log10(lens))  # df of log(lengths)
+( plogW <- predict(ruf_lm,nd) )       # predicted log(weights)
+
+( cf <- logbtcf(ruf_lm,10) )  # correction factor
+
+cf*(10^plogW)         # back-transforming with bias correction
+
+mlogW <- predict(ruf_lm,nd,interval="confidence")
+cf*10^mlogW
+
+plogW <- predict(ruf_lm,nd,interval="prediction")
+cf*10^plogW
+
+plot(logW~logL,data=ruf90,pch=19,col=rgb(0,0,0,1/4),
+     ylab="log Weight (g)",xlab="log Total Length (mm)")
+tmp <- range(ruf90$logL)
+xs <- seq(tmp[1],tmp[2],length.out=99)
+ys <- predict(ruf_lm,data.frame(logL=xs))
+lines(ys~xs,lwd=2)
+plot(wt~tl,data=ruf90,pch=19,col=rgb(0,0,0,1/4),
+     ylab="Weight (g)",xlab="Total Length (mm)")
+btxs <- 10^xs
+btys <- cf*10^ys
+lines(btys~btxs,lwd=2)
+
+btys <- cf*10^predict(ruf_lm,data.frame(logL=xs),
+                      interval="prediction")
+head(btys,n=3)
+
+plot(wt~tl,data=ruf90,pch=19,col=rgb(0,0,0,1/4),
+     ylab="Weight (g)",xlab="Total Length (mm)")
+lines(btys[,"fit"]~btxs,col="gray20",lwd=2,lty="solid")
+lines(btys[,"lwr"]~btxs,col="gray20",lwd=2,lty="dashed")
+lines(btys[,"upr"]~btxs,col="gray20",lwd=2,lty="dashed")
+
+r <- residuals(ruf_lm)
+fv <- fitted(ruf_lm)
+
+par(mfrow=c(2,2))
+plot(ruf_lm)
+
+
+```
+
+<br>
+
+These data provide overwhelming evidence that the weight is associated with the total length in Ruffe (p-value < 0.0001, analysis of variance F-test). There is an associated 20.6% increase in weight for each 1mm increase in total length (95% confidence interval: 19.33% to 21.95%). 
+
+<span style="color: magenta"> **Master Ogle 7.2 & 7.3** Great work!  I was hoping that somebody better at ggplot could produce ggplot graphs with the smoothed confidence and prediction zones. I tried for an hour and couldn't get a nice graph. **score 5/5** </span>
+
+<br>
+<br>
+
