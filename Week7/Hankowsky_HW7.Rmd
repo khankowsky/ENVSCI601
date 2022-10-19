@@ -1,0 +1,20 @@
+---
+title: "Hankowsky_HW7"
+output: html_document
+date: "2022-10-19"
+---
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+library(GGally)
+library(gridExtra)
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 8.28
