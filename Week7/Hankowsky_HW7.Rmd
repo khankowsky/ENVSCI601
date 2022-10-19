@@ -17,4 +17,190 @@ Hankowsky Homework Solutions
 
 
 # Basic Problems 
-## 8.28
+## 10.31
+```{r}
+#read in the data 
+parental_care <- Sleuth3::ex1031
+
+
+#looking at the dataframe
+head(parental_care)
+
+
+#plot the clutch volume by mass 
+parental_care %>%
+  ggplot() + 
+  geom_point(aes( x = BodyMass, y =  ClutchVolume, shape = Group, color = Group)) + 
+  scale_color_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  scale_shape_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  labs(title = "Clutch Volume v Body Mass", 
+       x = "Body Mass (kg)", y = bquote("Clutch Volume " (mm^3))) + 
+  theme_classic()
+
+
+#transforming the data as described in the question 
+parental_care <- parental_care %>%
+  mutate(log_clutch = log(ClutchVolume), 
+         log_mass = log(BodyMass), 
+         Group = relevel(Group, ref = "Mani"))
+
+
+#plot the clutch volume by mass 
+parental_care %>%
+  ggplot() + 
+  geom_point(aes(x = log_mass, y =  log_clutch, shape = Group, color = Group)) + 
+  scale_color_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  scale_shape_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  labs(title = "Log(Clutch Volume) v Log(Body Mass)", 
+       x = "Log(Body Mass (kg))", y = bquote("Log(Clutch Volume "~(mm^3)~")")) + 
+  theme_classic()
+
+
+#run and compare the regression models 
+parental_care_lm1 <- lm(log_clutch ~ log_mass + Group + log_mass:Group, data = parental_care)
+parental_care_lm2 <- lm(log_clutch ~ log_mass + Group, data = parental_care)
+parental_care_lm3 <- lm(log_clutch ~ log_mass, data = parental_care)
+
+anova(parental_care_lm2, parental_care_lm1) #testing for interaction effects 
+anova(parental_care_lm3, parental_care_lm2) #testing for Group effects
+
+
+#run the optimal regression
+parental_care_lm <- lm(log_clutch ~ log_mass + Group, data = parental_care)
+summary(parental_care_lm)
+
+
+#back-transform the estimates 
+exp(parental_care_lm$coefficients)
+exp(confint(parental_care_lm))
+
+100*(exp(parental_care_lm$coef) - 1) 
+100*(exp(confint(parental_care_lm)) - 1)
+
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(parental_care_lm)
+
+
+#plot the presentation graphic 
+par(mfrow=c(1,1))
+parental_care %>%
+  ggplot(aes(x = log_mass, y =  log_clutch, shape = Group, color = Group)) +
+  geom_point(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) +
+  scale_color_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  scale_shape_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  labs(title = "Log(Clutch Volume) v Log(Body Mass)", 
+       x = "Log(Body Mass (kg))", y = bquote("Log(Clutch Volume "~(mm^3)~")")) + 
+  theme_classic()
+
+```
+
+Adjusted for body mass, the median clutch volume for Non-Avain Maniraptoran Dinosuars is 65% greater than the median clutch volumne for Modern Biparental-Care Bird Species (95% confidence interval: 34% to 82%). 
+
+
+***
+
+## 11.25
+```{r}
+#read in the data 
+deposit_feeders <- Sleuth3::ex1125
+
+#looking at the dataframe
+head(deposit_feeders)
+
+
+```
+
+
+
+
+***
+
+# Supplemental Problems 
+
+## 10.32
+```{r}
+#read in the data 
+height <- Sleuth3::ex0726
+
+
+#looking at the dataframe
+head(height)
+
+
+#plot
+height %>%
+  ggplot() + 
+  geom_point(aes(x = Father, y =  Height, shape = Gender, color = Gender))
+
+height %>%
+  ggplot() + 
+  geom_point(aes(x = Mother, y =  Height, shape = Gender, color = Gender))
+
+
+#regression 
+height_lm <- lm(Height ~ Mother + Father + Gender, data = height)
+summary(height_lm)
+
+
+
+```
+
+
+
+***
+
+## 12.20
+```{r}
+#read in the data 
+galapagos <- Sleuth3::ex1220
+
+#looking at the dataframe
+head(galapagos)
+```
+
+
+
+
+***
+
+# Master Problem 
+
