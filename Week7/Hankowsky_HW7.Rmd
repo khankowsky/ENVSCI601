@@ -323,10 +323,22 @@ ggpairs(galapagos, columns = 2:8)
 
 
 #fit a model with all the variables 
-galapagos_lm1 <- lm(Total ~ Area + Elev + DistNear + DistSc + AreaNear, data = galapagos)
+galapagos_lm1 <- lm(Total ~ Area, data = galapagos)
 summary(galapagos_lm1)
 
-galapagos_lm1 <- lm(Total ~ Area + Elev + DistNear + DistSc + AreaNear, data = galapagos)
+galapagos_lm2 <- lm(Total ~ Area + Elev, data = galapagos)
+summary(galapagos_lm2)
+
+galapagos_lm3 <- lm(Total ~ Area + DistSc, data = galapagos)
+summary(galapagos_lm3)
+
+galapagos_lm4 <- lm(Total ~ Area + AreaNear, data = galapagos)
+summary(galapagos_lm4)
+
+
+galapagos_lm2 <- lm(Total ~ Area + Elev + DistSc + AreaNear, data = galapagos)
+summary(galapagos_lm2)
+
 
 ```
 
