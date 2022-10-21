@@ -270,14 +270,14 @@ head(height)
 
 
 #transposing the data 
-height <- height %>%
+height_long <- height %>%
   pivot_longer(cols = c("Father", "Mother"), 
                names_to = "parent", 
                values_to = "parent_height")
   
 
 #plot
-height %>%
+height_long %>%
   ggplot() + 
   geom_point(aes(x = parent_height, y =  Height)) + 
   facet_grid(Gender ~ parent) + 
@@ -289,9 +289,16 @@ height_lm <- lm(Height ~ Mother + Father + Gender, data = height)
 summary(height_lm)
 
 
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(height_lm)
+
+
 
 ```
 
+
+The equation for predicting a  child’s adult height from their mother’s height, their father’s height, and their gender is y = 16.43 + 0.32(Mother's Height) + 0.39(Father's Height) + 5.22(Male Gender). 
 
 
 ***
@@ -311,6 +318,15 @@ galapagos <- Sleuth3::ex1220
 #looking at the dataframe
 head(galapagos)
 
+#looking at scatterplots of the variables
+ggpairs(galapagos, columns = 2:8)
+
+
+#fit a model with all the variables 
+galapagos_lm1 <- lm(Total ~ Area + Elev + DistNear + DistSc + AreaNear, data = galapagos)
+summary(galapagos_lm1)
+
+galapagos_lm1 <- lm(Total ~ Area + Elev + DistNear + DistSc + AreaNear, data = galapagos)
 
 ```
 
