@@ -21,24 +21,7 @@ Hankowsky Homework Solutions
 
 # Basic Problems 
 ## 10.31
-Who Looks After the Kids? Different bird species have different strategies: Maternal, Paternal,
-and BiParental care. In 1984 J. Van Rhijn argued in the Netherlands Journal of Zoology
-that parental care was the ancestral condition, going back to the dinosaur predecessors of birds.
-D. J. Varricchio et al. (Science, Vol. 322, Dec. 19, 2008, pp. 1826–28) tested that argument by comparing
-the relationships between Clutch Volume and adult Body Mass in six different groups: modern
-maternal-care bird species (MatI n D 171), modern paternal-care bird species (PatI n D 40), modern
-biparental-care bird species (BiPI n D 204), modern maternal-care crocodiles (CrocI n D 19),
-non-avian maniraptoran dinosaurs thought to be ancestors of modern birds (ManiI n D 3), and other
-non-avian dinosaurs (OthrI n D 6). The question of interest was which group of modern creatures
-most closely matches the relationship in the maniraptoran dinosaurs. A partial listing of the data
-appears in Display 10.27.
-Fit a single model, with clutch volume (possibly transformed) as the response, that allows for
-separate straight lines in each group, using indicator variables for the different groups. For example,
-by selecting Mani as the reference group, you can determine how close any other group is to Mani
-by dropping out the indicator for that group and its product with the body mass variable. Do this for
-all other groups. (a) Are there differences among the relationships in the groups other than the Mani
-group? What if there were none? (b) What do you conclude about which other group is nearest the
-maniraptoran dinosaur group? (c) Is the model defensible? (d) Comment on the study design.
+
 ```{r}
 #read in the data 
 parental_care <- Sleuth3::ex1031
@@ -111,7 +94,7 @@ anova(parental_care_lm3, parental_care_lm2) #testing for Group effects
 
 
 #run the optimal regression
-parental_care_lm <- lm(log_clutch ~ log_mass + Group, data = parental_care)
+parental_care_lm <- lm(log_clutch ~ log_mass + Group + log_mass:Group, data = parental_care)
 summary(parental_care_lm)
 
 
@@ -154,19 +137,15 @@ parental_care %>%
 
 ```
 
-Adjusted for body mass, the median clutch volume for Non-Avain Maniraptoran Dinosuars is 65% greater than the median clutch volumne for Modern Biparental-Care Bird Species (95% confidence interval: 34% to 82%). 
+A scatterplot of the raw clutch volume as a function of body mass data showed the need for a transformation. A log-transformation was preformed and the scatterplot showed no problems, so the analysis was conducted with the log-transformed data. There is strong evidence that the relationship between clutch volume and body mass differed between the Mani group and the other groups (Extra Sum of Squares F-Test, p-value < 0.001). 
+
+
 
 
 ***
 
 ## 11.25
-Ingestion Rates of Deposit Feeders. The ingestion rates and organic consumption percentages
-of deposit feeders were considered in Exercise 9.21. The data set ex1125 repeats these data, but
-this time with three additional bivalve species included (the last three). The researcher wished to see
-if ingestion rate is associated with the percentage of organic matter in food, after accounting for animal
-weight, but was unsure about whether bivalves should be included in the analysis. Analyze the
-data to address this question of interest. (Data from L. M. Cammen, “Ingestion Rate: An Empirical
-Model for Aquatic Deposit Feeders and Detritivores,” Oecologia 44 (1980): 303–10.)
+
 ```{r}
 #read in the data 
 deposit_feeders <- Sleuth3::ex1125
@@ -229,9 +208,15 @@ ols_plot_dfbetas(deposit_feeders_lm2)
 
 
 
+#looking at teh bivalve effect
+deposit_feeders_lm3 <- lm(log_ingestion ~ log_weight + log_organic, data = deposit_feeders, 
+                          subset = (ID != 20 & ID != 22))
+
+anova(deposit_feeders_lm3, deposit_feeders_lm2) #testing for bivalve effects 
+
 
 #looking at the final model 
-summary(deposit_feeders_lm2)
+summary(deposit_feeders_lm3)
 
 #compoenent residual plots 
 crPlots(deposit_feeders_lm2)
@@ -243,8 +228,11 @@ exp(confint(deposit_feeders_lm2))
 100*(exp(deposit_feeders_lm2$coefficients) - 1) 
 100*(exp(confint(deposit_feeders_lm2)) - 1)
 
-```
 
+```
+There is strong evidence that the relationship between ingestion rate and the percentage of organic matter in food and animal weight differed between bivalves and non-bivalves (Extra Sum of Squares F-Test, p-value < 0.001). However, two of the bivalve observations were considerable outliers and were removed from the analysis. Thus, the bivalve term is only being fitted to one observation and I did not think it was appropriate to fit a model with a bivalve term if there was only one bivalve observation in the dataset.
+
+These data provide overwhelming evidence that the ingestion rate is associated with the percentage of organic matter in food, after accounting for animal weight (p-value < 0.0001, multiple regression). 
 
 
 
@@ -253,13 +241,7 @@ exp(confint(deposit_feeders_lm2))
 # Supplemental Problems 
 
 ## 10.32
-Galton’s Height Data. Reconsider the data in Exercise 7.26 on heights of adult children and
-their parents. Ignore the possible dependence of observations on children from the same family for
-now to answer the following: (a) What is an equation for predicting a child’s adult height from their
-mother’s height, their father’s height, and their gender? (b) By how much does the male mean height
-exceed the female mean height for children whose parents’ heights are the same? (c) Find a 95%
-prediction interval for a female whose father’s height is 72 inches and whose mother’s height is 64
-inches.
+
 ```{r}
 #read in the data 
 height <- Sleuth3::ex0726
@@ -304,13 +286,7 @@ The equation for predicting a  child’s adult height from their mother’s heig
 ***
 
 ## 12.20
-Galapagos Islands. The data in Display 12.17 come from a 1973 study. (Data from M. P.
-Johnson and P. H. Raven, “Species Number and Endemism: The Galapagos Archipelago Revisited,”
-Science 179 (1973): 893–5.) The number of species on an island is known to be related to the island’s
-area. Of interest is what other variables are also related to the number of species, after island area
-is accounted for, and whether the answer differs for native species and nonnative species. (Note:
-Elevations for five of the islands were missing and have been replaced by estimates for purposes of
-this exercise.)
+
 ```{r}
 #read in the data 
 galapagos <- Sleuth3::ex1220
