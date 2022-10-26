@@ -1,0 +1,57 @@
+---
+title: "Hankowsky_HW8"
+author: "Keith Hankowsky"
+date: '2022-10-25'
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+library(GGally)
+library(gridExtra)
+library(olsrr)
+library(car)
+
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 13.16
+```{r}
+#Read-In the data
+minnow <- Sleuth3::ex1014
+```
+
+
+## 13.18
+```{r}
+#Read-In the data
+
+```
+
+
+***
+
+# Supplemental Problems 
+## 13.17
+```{r}
+
+```
+
+
+##13.21
+```{r}
+
+```
+
+
+
+
+
+
