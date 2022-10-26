@@ -1,0 +1,334 @@
+---
+title: "Hankowsky_HW7"
+output: html_document
+date: "2022-10-19"
+---
+
+<span style="color: magenta"> **General Comments:** Your solution to the Cammen problem was innovative, and I liked the ols_plot_dfbetas function, which I hadn't seen before. I spent about 40 minutes trying to figure out why you found *Macoma* to be an outlier, but I figured it out. Your solution to 12.2 had some problems. It's too bad that you didn't analyze the master problem from Ogle' fisheries with R book. I'm trying to get some value out of of my $70 purchase of the book. He does have some neat code, but the scope is pretty limited.  **Basic score (4+5)/10, Supplemental Score (2.2+1.5)/5 Total score 12.7/10. So far you've earned 116.5 homework points on the first 7 10-pt homeworks, a bonus of 46.5 points. Great work.** </span>
+
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+library(GGally)
+library(gridExtra)
+library(olsrr)
+library(car)
+
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 10.31
+
+```{r}
+#read in the data 
+parental_care <- Sleuth3::ex1031
+
+
+#looking at the dataframe
+head(parental_care)
+
+
+#plot the clutch volume by mass 
+parental_care %>%
+  ggplot() + 
+  geom_point(aes( x = BodyMass, y =  ClutchVolume, shape = Group, color = Group)) + 
+  scale_color_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  scale_shape_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  labs(title = "Clutch Volume v Body Mass", 
+       x = "Body Mass (kg)", y = bquote("Clutch Volume " (mm^3))) + 
+  theme_classic()
+
+
+#transforming the data as described in the question 
+parental_care <- parental_care %>%
+  mutate(log_clutch = log(ClutchVolume), 
+         log_mass = log(BodyMass), 
+         Group = relevel(Group, ref = "Mani"))
+
+
+#plot the clutch volume by mass 
+parental_care %>%
+  ggplot() + 
+  geom_point(aes(x = log_mass, y =  log_clutch, shape = Group, color = Group)) + 
+  scale_color_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  scale_shape_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  labs(title = "Log(Clutch Volume) v Log(Body Mass)", 
+       x = "Log(Body Mass (kg))", y = bquote("Log(Clutch Volume "~(mm^3)~")")) + 
+  theme_classic()
+
+
+#run and compare the regression models 
+parental_care_lm1 <- lm(log_clutch ~ log_mass + Group + log_mass:Group, data = parental_care)
+parental_care_lm2 <- lm(log_clutch ~ log_mass + Group, data = parental_care)
+parental_care_lm3 <- lm(log_clutch ~ log_mass, data = parental_care)
+
+anova(parental_care_lm2, parental_care_lm1) #testing for interaction effects 
+anova(parental_care_lm3, parental_care_lm2) #testing for Group effects
+
+
+#run the optimal regression
+parental_care_lm <- lm(log_clutch ~ log_mass + Group + log_mass:Group, data = parental_care)
+summary(parental_care_lm)
+
+
+#back-transform the estimates 
+exp(parental_care_lm$coefficients)
+exp(confint(parental_care_lm))
+
+100*(exp(parental_care_lm$coef) - 1) 
+100*(exp(confint(parental_care_lm)) - 1)
+
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(parental_care_lm)
+
+
+#plot the presentation graphic 
+par(mfrow=c(1,1))
+parental_care %>%
+  ggplot(aes(x = log_mass, y =  log_clutch, shape = Group, color = Group)) +
+  geom_point(alpha = 0.6) + 
+  geom_smooth(method = "lm", se = F) +
+  scale_color_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  scale_shape_discrete(breaks=c("BiP", "Croc", "Mani", "Mat", "Othr", "Pat"),
+                      labels=c("Modern Biparental-Care \n Bird Species \n", 
+                                "Modern Maternal-Care \n Crocodiles \n", 
+                                "Non-Avain Maniraptoran \n Dinosaurs \n", 
+                                "Modern Maternal-Care \n Bird Species \n", 
+                                "Other Non-Avain \n Dinosaurs \n", 
+                                "Modern Paternal-Care \n Bird Species \n")) + 
+  labs(title = "Log(Clutch Volume) v Log(Body Mass)", 
+       x = "Log(Body Mass (kg))", y = bquote("Log(Clutch Volume "~(mm^3)~")")) + 
+  theme_classic()
+
+```
+
+A scatterplot of the raw clutch volume as a function of body mass data showed the need for a transformation. A log-transformation was preformed and the scatterplot showed no problems, so the analysis was conducted with the log-transformed data. There is strong evidence that the relationship between clutch volume and body mass differed between the Mani group and the other groups (Extra Sum of Squares F-Test, p-value < 0.001). 
+
+<span style="color: magenta"> **Basic 10.31_3rd** The analyses looked great, but you didn't answer several of the questions with the tips provided in the problem. You fit the full model, releveling the factor levels so Mani was the reference. The graphs look great. But, then you have to refit the model five times, leaving out one group's Y intercept and change in slope term (group x log(Body Mass)) each time. For four of the groups, you get a low p value for the extra sum of squares F test indicting that the slope & Y intercept together indicate a different regression. For the modern paternal care group, the p value is 0.41 indicating the slopes are similar. Then you have to note that there were only 3 avian dinosaur bones, which is pretty paltry evidence to get a Science paper. **Score 4/5** </span>
+
+***
+
+## 11.25
+
+```{r}
+#read in the data 
+deposit_feeders <- Sleuth3::ex1125
+
+#looking at the dataframe
+head(deposit_feeders)
+
+#transforming the data
+deposit_feeders <- deposit_feeders %>%
+  mutate(log_weight = log(Weight +1), 
+         log_ingestion = log(Ingestion +1), 
+         log_organic = log(Organic +1))
+
+# Gallagher addition (10/25/22): No need to add 1, there are no 0's 
+deposit_feeders <- deposit_feeders %>%
+  mutate(log_weight = log(Weight), 
+         log_ingestion = log(Ingestion), 
+         log_organic = log(Organic))
+
+#looking at scatterplots of the variables
+ggpairs(deposit_feeders, columns = 6:8)
+
+#run the mutiple regression 
+deposit_feeders_lm1 <- lm(log_ingestion ~ log_weight + log_organic + Bivalve, data = deposit_feeders)
+summary(deposit_feeders_lm1)
+
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(deposit_feeders_lm1)
+
+plot(deposit_feeders_lm1, which = 4)
+
+
+#plot the dfbetas plot
+#plotting it dr gallaghers way
+deposit_feeders_lm1_dfbs <- dfbetas(deposit_feeders_lm1)
+head(deposit_feeders_lm1_dfbs)
+
+plot(deposit_feeders_lm1_dfbs[ , c("log_weight", "log_organic")], 
+     main="dfbetas plot")
+identify(deposit_feeders_lm1_dfbs[ ,"log_weight"],deposit_feeders_lm1_dfbs[ ,"log_organic"])
+
+
+#plotting it using the olsrr::ols_plot_dfbetas
+ols_plot_dfbetas(deposit_feeders_lm1)
+
+
+#re-run the regression without observation 22
+#creating an ID number for each row
+deposit_feeders <- deposit_feeders %>%
+  mutate(ID = 1:nrow(deposit_feeders)) %>%
+  relocate(ID)
+
+#re-run regression 
+deposit_feeders_lm2 <- update(deposit_feeders_lm1, ~ ., subset = (ID != 20 & ID != 22))
+
+#plot the diagnostics of the updated regression 
+par(mfrow=c(2,2))
+plot(deposit_feeders_lm2)
+
+plot(deposit_feeders_lm2, which = 4)
+
+#plot the dfbetas plot
+ols_plot_dfbetas(deposit_feeders_lm2)
+
+
+
+#looking at teh bivalve effect
+deposit_feeders_lm3 <- lm(log_ingestion ~ log_weight + log_organic, data = deposit_feeders, 
+                          subset = (ID != 20 & ID != 22))
+
+anova(deposit_feeders_lm3, deposit_feeders_lm2) #testing for bivalve effects 
+
+
+#looking at the final model 
+summary(deposit_feeders_lm3)
+
+#compoenent residual plots 
+crPlots(deposit_feeders_lm2)
+
+#back transforming the data 
+exp(deposit_feeders_lm2$coefficients)
+exp(confint(deposit_feeders_lm2))
+
+100*(exp(deposit_feeders_lm2$coefficients) - 1) 
+100*(exp(confint(deposit_feeders_lm2)) - 1)
+
+
+```
+There is strong evidence that the relationship between ingestion rate and the percentage of organic matter in food and animal weight differed between bivalves and non-bivalves (Extra Sum of Squares F-Test, p-value < 0.001). However, two of the bivalve observations were considerable outliers and were removed from the analysis. Thus, the bivalve term is only being fitted to one observation and I did not think it was appropriate to fit a model with a bivalve term if there was only one bivalve observation in the dataset.
+
+These data provide overwhelming evidence that the ingestion rate is associated with the percentage of organic matter in food, after accounting for animal weight (p-value < 0.0001, multiple regression). 
+
+<span style="color: magenta"> **Basic 11.25_3rd** I've analyzed Cammen's data hundreds of times, and I've never seen results like yours. The outliers, and they are never that large, are usually case 21 & 22, the two large bivalves. You found 20 & 22, *Macoma balthica* and *Scrobicularia plana*, the small and large deposit feeding bivalves. I changed your code so that you don't add 1 to the body mass. *Macoma*, which I worked with extensively on both the Skagit flats and Savin Hill Cove at UMass Boston, is only 5.1 mg, so adding a mg could have made it an outlier. But still, your analysis with the olsrr:ols_plot_dfbetas was producing a plot showing both 20 & 22 as outliers. After 30 min of pondering this problem and reading up on olsrr:ols_plot_dfbetas, I discovered why you found 20 & 22 to be outliers. The final dfbeta plot is for the Bivalve_Yes variable, and that regression line is determined by the two endpoints of the 3-bivalve line. Of course deleting one or the other endpoint will cause a 1.5 or 2.5 standard error change in the regression parameters for the Bivalve regression coefficient. Whew! I thought after 40 years of working with Cammen's paper, I'd been wrong all along. Your analysis was very innovative. I'll keep my opinion that the bivalves should have been left in the analysis.**Score 5/5** </span>
+
+***
+
+# Supplemental Problems 
+
+## 10.32
+
+```{r}
+#read in the data 
+height <- Sleuth3::ex0726
+
+
+#looking at the dataframe
+head(height)
+
+
+#transposing the data 
+height_long <- height %>%
+  pivot_longer(cols = c("Father", "Mother"), 
+               names_to = "parent", 
+               values_to = "parent_height")
+  
+
+#plot
+height_long %>%
+  ggplot() + 
+  geom_point(aes(x = parent_height, y =  Height)) + 
+  facet_grid(Gender ~ parent) + 
+  labs(x = "Parent's Height (in)", y = "Child's Adult Height (in)")
+
+
+#regression 
+height_lm <- lm(Height ~ Mother + Father + Gender, data = height)
+summary(height_lm)
+
+
+#plot the diagnostics 
+par(mfrow=c(2,2))
+plot(height_lm)
+
+
+```
+
+
+The equation for predicting a  child’s adult height from their mother’s height, their father’s height, and their gender is y = 16.43 + 0.32(Mother's Height) + 0.39(Father's Height) + 5.22(Male Gender). 
+
+<span style="color: magenta"> **Supplemental 10.32_3rd** Your solution was correct for part (a) but you didn't answer part (b) [included in part a] & (c) [I posted the predict code on the homework problem discussion board] **Score 2.2/2.5** </span>
+
+***
+
+## 12.20
+
+```{r}
+#read in the data 
+galapagos <- Sleuth3::ex1220
+
+#looking at the dataframe
+head(galapagos)
+
+#looking at scatterplots of the variables
+ggpairs(galapagos, columns = 2:8)
+
+
+#fit a model with all the variables 
+galapagos_lm1 <- lm(Total ~ Area, data = galapagos)
+summary(galapagos_lm1)
+
+galapagos_lm2 <- lm(Total ~ Area + Elev, data = galapagos)
+summary(galapagos_lm2)
+
+galapagos_lm3 <- lm(Total ~ Area + DistSc, data = galapagos)
+summary(galapagos_lm3)
+
+galapagos_lm4 <- lm(Total ~ Area + AreaNear, data = galapagos)
+summary(galapagos_lm4)
+
+
+galapagos_lm2 <- lm(Total ~ Area + Elev + DistSc + AreaNear, data = galapagos)
+summary(galapagos_lm2)
+
+
+```
+
+<span style="color: magenta"> **Supplemental 12.20_3rd** You had a start, but scatterplots would reveal that all of the variables needed to be log transformed. Then, you had to regress native and non-native species versus log (area) and the other variables, finding that only log(Area) was important for both the log(native) and log(nonnative) species **Score 1.5/2.5** </span>
+
+***
+
+# Master Problem 
+
