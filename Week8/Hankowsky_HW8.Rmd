@@ -23,15 +23,152 @@ Hankowsky Homework Solutions
 
 # Basic Problems 
 ## 13.16
+Toxic Effects of Copper and Zinc. Reconsider the data in Display 10.20 (file: ex1014). (a) Is
+the experiment a randomized block design or a completely randomized design with factorial treatment
+structure? (b) Analyze the data using two-way analysis of variance. (c) How does the analysis
+of variance compare to the regression analysis (i.e., what are the issues in deciding which analysis is
+more appropriate)?
 ```{r}
 #Read-In the data
 minnow <- Sleuth3::ex1014
+
+#take a look at the dataset 
+head(minnow)
+
+#turn copper and zinc into factors 
+minnow <- minnow %>%
+  mutate(Copper = as.factor(Copper), 
+         Zinc = as.factor(Zinc))
+
+
+#look at the boxplots 
+p1 <- minnow %>%
+  ggplot() + 
+  geom_boxplot(aes(x = as.factor(Copper), y = Protein)) + 
+  labs(x = "Copper") + 
+  theme_classic()
+
+p2 <- minnow %>%
+  ggplot() + 
+  geom_boxplot(aes(x = as.factor(Zinc), y = Protein)) + 
+  labs(x = "Zinc", y = "") + 
+  theme_classic()
+
+grid.arrange(p1, p2, nrow = 1)
+
+
+
+# REGRESSION ANALYSIS
+#running the full model 
+minnow_lm <- lm(Protein ~ Copper + Zinc, data = minnow) #when I included the interaction term it wasn't really running the subsequent code well 
+anova(minnow_lm)
+
+par(mfrow=c(2,2))
+plot(minnow_lm)
+
+summary(minnow_lm)
+
+
+# ANOVA ANALYSIS 
+minnow_aov <- aov(Protein ~ Copper + Zinc, data = minnow)
+
+par(mfrow=c(2,2))
+plot(minnow_aov)
+
+summary(minnow_aov)
+
+
 ```
+
+The experiment is a completely randomized design with factorial treatment structure. 
+
+
 
 
 ## 13.18
+El Ni ˜no and Hurricanes. Reconsider the El Ni˜no and Hurricane data set from Exercise 10.28.
+(a) Regress the log of the storm index on West African wetness (treated as a categorical factor with
+2 levels) and El Ni˜no temperature (treated as a categorical factor with 3 levels); retain the sum of
+squared residuals and the residual degrees of freedom. (b) Regress the log of the storm index onWest
+African wetness (treated as categorical with 2 levels), El Ni˜no temperature (treated as numerical),
+and the square of El Ni˜no temperature. Retain the sum of squared residuals and the residual degrees
+of freedom. (c) Explain why the answers to (a) and (b) are the same. (d) Explain why a test that
+the coefficient of the temperature-squared term is zero can be used to help decide whether to treat
+temperature as numerical or categorical.
 ```{r}
 #Read-In the data
+hurricane <- Sleuth3::ex1028
+
+#take a look at the dataset 
+head(hurricane)
+
+#transform the data as described in the question 
+hurricane <- hurricane %>%
+  mutate(log_stormindex = log(StormIndex), 
+         Temperature_a = as.factor(Temperature), 
+         WestAfrica_cat = as.factor(WestAfrica))
+
+
+
+# REGRESSION ANALYSIS - PART A
+#run the regression 
+hurricane_a_lm1 <- lm(log_stormindex ~ WestAfrica_cat + Temperature_a + WestAfrica_cat:Temperature_a, data = hurricane)
+
+par(mfrow=c(2,2))
+plot(hurricane_a_lm1)
+
+#refit without interaction and test for interaction effect
+hurricane_a_lm2 <- update(hurricane_a_lm1, ~ . - WestAfrica_cat:Temperature_a)
+anova(hurricane_a_lm2, hurricane_a_lm1) # no evidence for an interaction effect, p-value = 0.56
+
+
+#run optimal model, question asks for both West Africa wetness and El Nino temp to be in the model 
+hurricane_a_lm <- lm(log_stormindex ~ WestAfrica_cat + Temperature_a, data = hurricane)
+
+summary(hurricane_a_lm)
+anova(hurricane_a_lm)
+
+par(mfrow=c(2,2))
+plot(hurricane_a_lm)
+
+
+
+# REGRESSION ANALYSIS - PART B 
+hurricane_b_lm1 <- lm(log_stormindex ~ WestAfrica_cat + Temperature + WestAfrica_cat:Temperature, data = hurricane)
+
+par(mfrow=c(2,2))
+plot(hurricane_b_lm1)
+
+#refit without interaction and test for interaction effect
+hurricane_b_lm2 <- update(hurricane_b_lm1, ~ . - WestAfrica_cat:Temperature)
+anova(hurricane_b_lm2, hurricane_b_lm1) # no evidence for an interaction effect, p-value = 0.60
+
+
+#run optimal model, question asks for both West Africa wetness and El Nino temp to be in the model 
+hurricane_b_lm <- lm(log_stormindex ~ WestAfrica_cat + Temperature, data = hurricane)
+
+summary(hurricane_b_lm)
+anova(hurricane_b_lm)
+
+par(mfrow=c(2,2))
+plot(hurricane_b_lm)
+
+
+
+# PART C - Compare the SS residuals and residual df
+a1 <- anova(hurricane_a_lm)
+a2 <- anova(hurricane_b_lm)
+
+#extracting the SS residuals 
+a1["Residuals", "Sum Sq"]
+a2["Residuals", "Sum Sq"]
+
+#extracting the residual df
+a1["Residuals", "Df"]
+a2["Residuals", "Df"]
+
+
+
 
 ```
 
@@ -40,13 +177,96 @@ minnow <- Sleuth3::ex1014
 
 # Supplemental Problems 
 ## 13.17
+Dinosaur Extinctions—An Observational Study. About 65 million years ago, the dinosaurs
+suffered a mass extinction virtually overnight (in geologic time).What happened in this period, the
+Cretaceous–Tertiary (KT) boundary, that could have produced such calamity? Among many clues,
+one that all scientists regard as crucial is a layer of iridium-rich dust that was deposited over much of
+the earth at that time. Data from one of the first discoveries of this layer are shown inDisplay 13.22.
+The diagram traces iridium concentrations in soil samples taken from extensive shale and limestone
+deposits at Gubbio, Italy. Iridium (parts per trillium) is graphed against the depth at which samples
+were taken, with depth giving a crude measure of historic time.
+
+Iridium is a trace element present in most soils. But concentrations as high as those at the peak
+near 347 meters, at the KT boundary, can only occur in association with highly unusual events, such
+as volcanic eruptions or meteor impacts. So the theory is that such an event caused a massive dust
+cloud that blanketed the earth for years, killing off animals and their food sources. Butwas the cause a
+meteor (coming down on the Yucatan peninsula in central America) or volcanic eruptions (centered
+in southern China)? Two articles debating the issue appeared in the October 1990 issue of Scientific
+American—W. Alvarez and F. Asaro, “What Caused the Mass Extinction? An Extraterrestrial
+Impact,” Scientific American 263(4): 76–84, and E. Courtillot, “What Caused the Mass Extinction?
+A Volcanic Eruption,” Scientific American 263(4): 85–93. A crucial issue in the debate is the shape
+of the iridium trace because the timing and extent of the source give clues to its nature.
+
+The raw data are provided in Display 13.23. (a) Fit the two-way, saturated model to the untransformed
+data and draw a plot of the residuals versus estimated means to see if a transformation
+is suggested. (b) Fit the two-way model (after transformation if appropriate) and test for interaction,
+using a multiple regression routine. (c) If appropriate with your statistical software, repeat part
+(b) using an analysis of variance routine.
 ```{r}
+#Read-In the data
+dinos <- Sleuth3::ex1317
+
+#take a look at the dataset 
+head(dinos)
+
+#take a look at the boxplots 
+p31 <- dinos %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Strata, y = Iridium)) + 
+  theme_classic()
+
+p32 <- dinos %>%
+  ggplot() + 
+  geom_boxplot(aes(x = DepthCat, y = Iridium)) + 
+  labs(x = "Depth Category", y = "") + 
+  theme_classic()
+
+grid.arrange(p31, p32, nrow = 1)
+
+
+
+# PART A 
+dinos_a_lm <- lm(Iridium ~ Strata + DepthCat, data = dinos)
+
+par(mfrow=c(2,2))
+plot(dinos_a_lm)
+
+
+
+# PART B 
+
+
+
+
+# PART C 
 
 ```
 
 
 ##13.21
+Pygmalion. The term Pygmalion effect (used in the Section 13.1.2 data problem) originated
+with the 1960s’ work of psychologist Robert Rosenthal and elementary school principal Lenore
+Jacobson, who conducted a randomized block experiment on the children in Jacobson’s elementary
+school. In each classroom (i.e., for each block of students), they assigned roughly 20% of the
+students to a “likely to excel” treatment group and the remainder to a control group. After all students
+took a standardized test at the begining of the school year, Rosenthal and Jacobson identified
+to teachers those students that had been indicated by the intelligence test as very likely to excel in
+the coming year. This was false information, though. The “likely to excel” students were simply
+those who had been assigned by a chance mechanism to the “likely to excel” treatment group. The
+researchers deceived the teachers with this false information to create artificial expectations and to
+explore the effect of those expectations on student test score gains. Display 13.26 is a partial listing
+of a data set simulated to match the summary statistics and conclusions from Table A-7 of Rosenthal
+and Jacobson’s report (R. Rosenthal, and L. Jacobson, 1968, Pygmalion in the Classroom: Teacher
+Expectation and Pupil’s Intellectual Development, Holt, Rinehart, andWinston, Inc.). Analyze the
+data to summarize the evidence that teachers’ expectations affect student test score gains. Write a
+statistical report of your conclusions.
 ```{r}
+#Read-In the data
+pygmalion <- Sleuth3::ex1321
+
+#take a look at the dataset 
+head(pygmalion)
+
 
 ```
 
