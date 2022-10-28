@@ -57,6 +57,9 @@ p2 <- minnow %>%
 grid.arrange(p1, p2, nrow = 1)
 
 
+#look at the interaction plot
+with(minnow, interaction.plot(Copper, Zinc, Protein))
+
 
 # REGRESSION ANALYSIS
 #running the full model 
@@ -80,9 +83,10 @@ summary(minnow_aov)
 
 ```
 
-The experiment is a completely randomized design with factorial treatment structure. 
+The experiment is a randomized block design, because the beakers containing minnows were randomly allocated to one of the treatments, each of which constitutes a single trial. 
 
 
+***
 
 
 ## 13.18
@@ -173,6 +177,9 @@ a2["Residuals", "Df"]
 ```
 
 
+
+
+
 ***
 
 # Supplemental Problems 
@@ -209,6 +216,10 @@ dinos <- Sleuth3::ex1317
 #take a look at the dataset 
 head(dinos)
 
+#transforming the data for later in the problem 
+dinos <- dinos %>%
+  mutate(log_iridium = log(Iridium))
+
 #take a look at the boxplots 
 p31 <- dinos %>%
   ggplot() + 
@@ -234,6 +245,26 @@ plot(dinos_a_lm)
 
 
 # PART B 
+dinos_b_lm1 <- lm(log_iridium ~ Strata + DepthCat + Strata:DepthCat, data = dinos)
+
+par(mfrow=c(2,2))
+plot(dinos_b_lm)
+
+
+#refit without interaction and test for interaction effect
+dinos_b_lm2 <- update(dinos_b_lm1, ~ . - Strata:DepthCat)
+anova(hurricane_b_lm2, hurricane_b_lm1) # no evidence for an interaction effect, p-value = 0.60
+
+
+#run optimal model
+dinos_b_lm <- lm(log_iridium ~ Strata + DepthCat, data = dinos)
+
+summary(dinos_b_lm)
+anova(dinos_b_lm)
+
+par(mfrow=c(2,2))
+plot(dinos_b_lm)
+
 
 
 
@@ -241,6 +272,11 @@ plot(dinos_a_lm)
 # PART C 
 
 ```
+
+
+
+
+***
 
 
 ##13.21
@@ -268,10 +304,59 @@ pygmalion <- Sleuth3::ex1321
 head(pygmalion)
 
 
+#take a look at the boxplots 
+pygmalion %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Treatment, y = Gain)) + 
+  labs(title = "Boxplot of Student Test Score Gains vs Treatment")
+  theme_classic()
+
+pygmalion %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Class, y = Gain, color = Treatment)) + 
+  labs(title = "Boxplot of Student Test Score Gains vs Classroom") + 
+  theme_classic()
+
+#take a look at interaction plot 
+with(pygmalion, interaction.plot(Class, Treatment, Gain))
+
+
+# REGRESSION ANALYSIS
+pygmalion_lm1 <- lm(Gain ~ Treatment + Class + Treatment:Class, data = pygmalion)
+
+par(mfrow=c(2,2))
+plot(pygmalion_lm1)
+
+#refit without interaction and test for interaction effect
+pygmalion_lm2 <- update(pygmalion_lm1, ~ . - Treatment:Class)
+anova(pygmalion_lm2, pygmalion_lm1) # no evidence for an interaction effect, p-value = 0.11
+
+#refit without class and test for class effect 
+pygmalion_lm3 <- update(pygmalion_lm2, ~ . - Class)
+anova(pygmalion_lm3, pygmalion_lm2) # strong evidence for a class effect, p-value < 0.0001
+
+
+#run optimal model
+pygmalion_lm <- lm(Gain ~ Treatment + Class, data = pygmalion)
+
+summary(pygmalion_lm)
+anova(pygmalion_lm)
+
+par(mfrow=c(2,2))
+plot(pygmalion_lm)
+
+confint(pygmalion_lm)
+
+
+#randomization distribution 
+obs = summary(lm(Gain ~ Treatment + Class, data = pygmalion))$coefficients["Treatmentpygmalion", "t value"]
+
+nulldist = do(15000) * summary(lm(Gain ~ shuffle(Treatment) + shuffle(Class), data = pygmalion))$coefficients["shuffle(Treatment)pygmalion", "t value"]
+
+histogram(~result, groups = result >= obs, v = obs, data = nulldist)
+tally(~result >= obs, format = "proportion", data = nulldist)
+
 ```
 
-
-
-
-
+The Pygmalion treatments adds an estimated 3.61 points to a students test score (95% confidence interval: 0.147 to 12.90 points). The study provides moderate evidence that the effect is real (one-sided p-value = 0.021). 
 
