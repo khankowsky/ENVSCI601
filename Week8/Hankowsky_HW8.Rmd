@@ -64,12 +64,13 @@ with(minnow, interaction.plot(Copper, Zinc, Protein))
 # REGRESSION ANALYSIS
 #running the full model 
 minnow_lm <- lm(Protein ~ Copper + Zinc, data = minnow) #when I included the interaction term it wasn't really running the subsequent code well 
-anova(minnow_lm)
 
 par(mfrow=c(2,2))
 plot(minnow_lm)
 
 summary(minnow_lm)
+anova(minnow_lm)
+
 
 
 # ANOVA ANALYSIS 
@@ -83,7 +84,10 @@ summary(minnow_aov)
 
 ```
 
-The experiment is a randomized block design, because the beakers containing minnows were randomly allocated to one of the treatments, each of which constitutes a single trial. 
+The experiment is a randomized block design, because the beakers containing minnows were randomly allocated to one of the treatments, each of which constitutes a single trial. The results from the ANOVA table for analysis of variance and the regression analysis are the same. It does not matter which method is used to analyse factorial/blocked designed studies, the results will be the same. However, if the study is interested in subgroup comparisons, those may be easier in a regression format with linear combinations. 
+
+<br>
+<br>
 
 
 ***
@@ -175,9 +179,23 @@ a2["Residuals", "Df"]
 
 
 ```
+Part A: A log-transformation was conducted based problem statement in the question. A saturated model was fit to the log-transformed storm index data with West African wetness, temperature (categorical) and the interaction of West African wetness and temperature as explanatory variables. A reduced model was fit without the interaction term, and there was no evidence for an interaction effect (Extra Sum of Squares F-test, p-value = 0.56). The diagnostic plots show no problematic patterns in the model fit. 
+
+<br>
+
+Part B: A log-transformation was conducted based problem statement in the question. A saturated model was fit to the log-transformed storm index data with West African wetness, temperature (continuous) and the interaction of West African wetness and temperature as explanatory variables. A reduced model was fit without the interaction term, and there was no evidence for an interaction effect (Extra Sum of Squares F-test, p-value = 0.60). The diagnostic plots show no problematic patterns in the model fit. 
+
+<br>
+
+Part C: The sum of squared residuals and the residual degrees of freedom were slightly different in my analysis. The degrees of freedom are different for numeric and categorical variables. The degrees of freedom for a categorical variable are dependent on the number of levels in the variable, whereas thea continuous variable only has one degree of freedom. 
+
+<br>
+
+Part D: The temperature term should be treated as categorical. It has three levels (1, 0, -1). If you were to square the temperature it would essentially get rid of the information captured in that term. It would not be appropriate to treat the temperature term as continuous in this study. 
 
 
-
+<br>
+<br>
 
 
 ***
@@ -237,10 +255,27 @@ grid.arrange(p31, p32, nrow = 1)
 
 
 # PART A 
+dinos_a_lm1 <- lm(Iridium ~ Strata + DepthCat + Strata:DepthCat, data = dinos)
+
+par(mfrow=c(2,2))
+plot(dinos_a_lm1)
+
+
+#refit without interaction and test for interaction effect
+dinos_a_lm2 <- update(dinos_a_lm1, ~ . - Strata:DepthCat)
+anova(dinos_a_lm2, dinos_a_lm1) # no evidence for an interaction effect, p-value = 0.43
+
+
+#run optimal model
 dinos_a_lm <- lm(Iridium ~ Strata + DepthCat, data = dinos)
+
+summary(dinos_a_lm)
+anova(dinos_a_lm)
 
 par(mfrow=c(2,2))
 plot(dinos_a_lm)
+
+
 
 
 
@@ -248,12 +283,12 @@ plot(dinos_a_lm)
 dinos_b_lm1 <- lm(log_iridium ~ Strata + DepthCat + Strata:DepthCat, data = dinos)
 
 par(mfrow=c(2,2))
-plot(dinos_b_lm)
+plot(dinos_b_lm1)
 
 
 #refit without interaction and test for interaction effect
 dinos_b_lm2 <- update(dinos_b_lm1, ~ . - Strata:DepthCat)
-anova(hurricane_b_lm2, hurricane_b_lm1) # no evidence for an interaction effect, p-value = 0.60
+anova(dinos_b_lm2, dinos_b_lm1) # no evidence for an interaction effect, p-value = 0.79
 
 
 #run optimal model
@@ -270,16 +305,45 @@ plot(dinos_b_lm)
 
 
 # PART C 
+dinos_c_aov1 <- aov(log_iridium ~ Strata + DepthCat + Strata:DepthCat, data = dinos)
+
+par(mfrow=c(2,2))
+plot(dinos_c_aov1)
+
+
+#refit without interaction and test for interaction effect
+dinos_c_aov2 <- update(dinos_c_aov1, ~ . - Strata:DepthCat)
+anova(dinos_c_aov2, dinos_c_aov1) # no evidence for an interaction effect, p-value = 0.79
+
+
+#run optimal model
+dinos_c_aov <- aov(log_iridium ~ Strata + DepthCat, data = dinos)
+
+summary(dinos_c_aov)
+
+par(mfrow=c(2,2))
+plot(dinos_c_aov)
 
 ```
 
+Part A: A regression model was fit with the raw iridium data with stratum, depth category and the interaction of stratum and depth category as explanatory variables. A reduced model was fit without the interaction term, and there was no evidence for an interaction effect (Extra Sum of Squares F-test, p-value = 0.43). However, the residuals for this model were extraordinarly large, so a log-transformation was conducted for Part B of the problem. 
 
+<br>
+
+Part B: A log-transformation was conducted based on the residual plot from Part A. A saturated model was fit to the log-transformed iridium data with stratum, depth category and the interaction of stratum and depth category as explanatory variables. A reduced model was fit without the interaction term, and there was no evidence for an interaction effect (Extra Sum of Squares F-test, p-value = 0.79). The diagnostic plots show no problematic patterns in the model fit. 
+
+<br>
+
+Part C: A saturated model was fit to the log-transformed iridium data with stratum, depth category and the interaction of stratum and depth category as explanatory variables. A reduced model was fit without the interaction term, and there was no evidence for an interaction effect (Extra Sum of Squares F-test, p-value = 0.79). The diagnostic plots show no problematic patterns in the model fit. The exact same results as the regression routine in Part B. 
+
+<br>
+<br>
 
 
 ***
 
 
-##13.21
+## 13.21
 Pygmalion. The term Pygmalion effect (used in the Section 13.1.2 data problem) originated
 with the 1960s’ work of psychologist Robert Rosenthal and elementary school principal Lenore
 Jacobson, who conducted a randomized block experiment on the children in Jacobson’s elementary
@@ -308,7 +372,7 @@ head(pygmalion)
 pygmalion %>%
   ggplot() + 
   geom_boxplot(aes(x = Treatment, y = Gain)) + 
-  labs(title = "Boxplot of Student Test Score Gains vs Treatment")
+  labs(title = "Boxplot of Student Test Score Gains vs Treatment") +
   theme_classic()
 
 pygmalion %>%
@@ -324,6 +388,7 @@ with(pygmalion, interaction.plot(Class, Treatment, Gain))
 # REGRESSION ANALYSIS
 pygmalion_lm1 <- lm(Gain ~ Treatment + Class + Treatment:Class, data = pygmalion)
 
+summary(pygmalion_lm1)
 par(mfrow=c(2,2))
 plot(pygmalion_lm1)
 
@@ -359,4 +424,8 @@ tally(~result >= obs, format = "proportion", data = nulldist)
 ```
 
 The Pygmalion treatments adds an estimated 3.61 points to a students test score (95% confidence interval: 0.147 to 12.90 points). The study provides moderate evidence that the effect is real (one-sided p-value = 0.021). 
+
+<br>
+<br>
+
 
