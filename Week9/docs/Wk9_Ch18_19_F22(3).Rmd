@@ -1,0 +1,976 @@
+---
+title: "WkIX_Ch18_19_F21"
+author: "Eugene D. Gallagher"
+date: "10/31/22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(AICcmodavg) # for AICc()
+library(AMR)  # used for the G test in 19.1
+library(car)
+library(DescTools) # for BinomCI & pearson test
+library(e1071)
+library(fBasics) # for the ksnormTest
+library(ggpubr)  # for ggdensity and ggqqplot
+library(Hmisc)   # Harrell's misc. programs for Case 18.1 analysis 
+library(lattice)  # for xyplot
+library(MASS)
+library(nortest)
+library(Sleuth3)
+library(rstatix) # for shapiro_test
+library(tibble)
+library(tidyverse)
+library(timeDate)
+```
+
+# Homework 8 Solutions (5:30 PM - 6 PM)
+
+## Basic 13.16 Toxic effects of Copper & Zinc (p 415)
+
+### 
+
+## Basic 13.18 El Nino and Hurricanes (p 416-417)
+
+###
+
+## Supplemental 13.17 Dinosaur Extinctions--An observational study (p 415-416)
+
+### 
+
+## Supplemental 13.21 El Pygmalion (p 418)
+
+###
+
+## HW 8 Master Automated regression of random data
+
+### 
+
+***
+
+# Key Statisticians for Today's Class
+
+```{r, echo= FALSE, out.width='33%', fig.align='left',fig.cap='Adolphe Quetelet'}
+knitr::include_graphics('../images/Quetelet.jpg')
+```
+
+```{r, echo= FALSE, out.width='33%', fig.align='center',fig.cap='Karl Pearson'}
+knitr::include_graphics('../images/Pearson_Karl.jpg')
+```
+
+```{r, echo= FALSE, out.width='33%', fig.align='right',fig.cap='RA Fisher'}
+knitr::include_graphics('../images/FisherRA.jpg')
+```
+
+```{r, echo= FALSE, out.width='50%', fig.align='left',fig.cap='Egon Pearson'}
+knitr::include_graphics('../images/Pearson_Egon.jpg')
+```
+
+```{r, echo= FALSE, out.width='50%', fig.align='right',fig.cap='Ralph DAgostino'}
+knitr::include_graphics('../images/DAgostino_Ralph.jpg')
+```
+
+***
+
+# Tests of Goodness of Fit, Homogeneity & Independence
+
+***
+
+![Larsen & Marx (2018) Figure 10.3.1](..\images\LMTheorem100301.jpg)
+
+***
+
+![Larsen & Marx (2018) Case Study 10.3.1, Zaret (1972, L & O)](..\images\Zaret.jpg)
+![*Ceriodaphnia* from Zaret's paper1](..\images\Zaret_NoStar.jpg)
+```{r Analysis of Zaret data with a binomial test}
+# What is the two-tailed p-value for a Chi-square statistic of 5.93 with 1 df?
+p1 <- pchisq(5.93, df=1, lower.tail=FALSE)
+p1
+p2<-binom.test(40,44,p=3/4,alternative="greater")
+p2$p.value*2
+# One sample binomial test. Is 40/44 close enough to 3/4? Use a chi-square test.
+
+c = (40-44*3/4)^2/(44*3/4) + (4-44*1/4)^2/(44*1/4)
+c
+p3 <- pchisq(c, df=1, lower.tail=FALSE)
+p3
+# Zaret's (1972) other experiment, with 7 of 15 selected, po=1/2
+p4<-binom.test(7,15,p=1/2,alternative="less")
+p4$p.value
+```
+
+***
+
+## Part 1) Was Quetelet's Average Man Normal?
+
+### Part 1A) Load Quetelet's (1846) data (Larsen & Marx 2018 p 504; Stigler 1986, p. 207)
+
+```{r Load Quetelet 1846 Chest data}
+# Quetelet's data
+ChestCircumf<-33:48
+Observed<-c(3, 18, 81, 185, 420, 749, 1073, 1079, 934, 658, 370, 92, 50, 21, 4, 1)
+DATA=rep(ChestCircumf,Observed)
+```
+
+### Fit the Quetelet chest distribution's 4 moments: mean, variance, skewness & Kurtosis
+
+```{r Quetelet Scottish chest data distribution}
+fitdistr(DATA, "normal") # from the MASS package
+(VarQuetelet = var(DATA))
+(SkewQuetelet<-skewness(DATA))
+(KurtQuetelet<-timeDate::kurtosis(DATA,method="moment"))
+```
+### Visually display Quetelet's data for normality
+
+![Table 1 from Gallagher (2020), analysis by Quetelet 1846.](..\images\GAE20Table1.jpg)
+
+***
+
+![Table 2 from Gallagher (2020), p< 0.001](..\images\GAE20Table2.jpg)
+
+***
+
+![Figure 1 from Gallagher (2020) ](..\images\GAE20Fig1.jpg)
+
+***
+
+```{r R plot of Quetelet data with normal curve, Gallagher (2020) Fig 1}
+Quetelet<-tibble(Chest_girth=DATA)  # need a tibble or data frame for ggplot
+
+# overlay histogram and density plot from
+# https://scientificallysound.org/2018/06/07/test-normal-distribution-r/
+p1 = ggplot(Quetelet, aes(x=Chest_girth)) +
+            geom_histogram(aes(y = ..density..), binwidth=1, colour="black", fill="white") +
+            labs(title="Quetelet's Scottish Chest Girths", 
+            x= "Chest circumference (in.)",y = "Density") +
+            stat_function(fun = dnorm, lwd = 2, col = 'red', 
+                          args = list(mean = mean(Quetelet$Chest_girth), 
+                                     sd = sd(Quetelet$Chest_girth)))
+p1
+```
+
+## Part 1B) Load the Stigler-corrected Quetelet data. Stigler (1986, p 208) documents that Quetelet made errors in transcribing the data from the 1817 Edinburgh Medical and Surgical Journal. Stigler provides the correct data in Table 5.6 (p. 208). There were 5732, not 5738 cases and, of most importance in fitting the chi-square distribution, there were 168, not 92, 44" chests.
+
+```{r Load Stigler 1986 Corrected Scottish Chest data}
+observed=c(3, 19, 81, 189, 409, 753, 1062, 1082, 935, 646, 313, 168, 50, 18, 3, 1)
+data<-rep(ChestCircumf,observed)
+```
+
+### Fit the Stigler-corrected chest data's 4 moments: mean, variance, skewness & kurtosis
+
+```{r Stigler Scottish chest data distribution}
+fitdistr(data,"normal") # From the MASS package
+(VarStigler = var(data))
+(SkewStigler<-skewness(data)) # 3 is expected
+(KurtStigler<-timeDate::kurtosis(DATA,method="moment")) # zero is expected
+```
+
+***
+
+![Table 3 from Gallagher (2020). Analysis of Stigler's corrected data, p = 0.17](..\images\GAE20Table3.jpg)
+
+***
+
+![Figure 2 from Gallagher (2020) ](..\images\GAE20Fig2.jpg)
+
+***
+
+```{r R plot of Stigler-corrected data with normal curve, Gallagher (2020) Fig 2}
+# Need to create a tibble for ggplot
+Stigler<-tibble(Chest_girth=data)
+p4 = ggplot(Stigler, aes(x=Chest_girth)) +
+            geom_histogram(aes(y = ..density..), binwidth=1, colour="black", fill="white") +
+              labs(title="Stigler Corrected Scottish Chest Girths", 
+            x= "Chest circumference (in.)", y = "Density") +
+            stat_function(fun = dnorm, lwd = 2, col = 'red', 
+                          args = list(mean = mean(Stigler$Chest_girth), 
+                                      sd = sd(Stigler$Chest_girth)))
+p4
+```
+
+#### 4 QQ plots of Stigler data
+
+![Figure 3 from Gallagher (2020) QQ Plot of Stigler-corrected Chest Data](..\images\GAE20Fig3.jpg)
+
+***
+
+```{r Stigler Scottish Chest data, visual displays of 3 QQ plots}
+qqPlot(data, main='Stigler-corrected Scottish Chest Girths')
+# QQ plot from https://www.datanovia.com/en/lessons/normality-test-in-r
+ggqqplot(data, title='Stigler-corrected Scottish Chest Girths',
+         xlab = "Chest circumference (in.)", ylab = "Probability",
+         ggtheme=theme_classic())
+
+z.data<-(data-mean(data))/sd(data) ## standardized data
+qqnorm(z.data, main='Stigler-corrected Scottish Chest Girths') ## drawing the QQplot
+abline(0,1) ## drawing a 45-degree reference line
+
+qqnorm(data, main='Stigler-corrected Scottish Chest Girths')
+qqline(data)
+
+```
+
+![Figure 4 from Gallagher (2020) Empirical Cumulative Distribution Plot of Stigler-corrected Chest Data](..\images\GAE20Fig4.jpg)
+***
+
+![Figure 4 from Gallagher (2020) with the same mean and sd as Stigler's data. ](..\images\GAE20Fig4_random.jpg)
+
+### Empirical cumulative distribution plot of Stigler-corrected Scottish Chest Girths
+
+```{r Stigler Scottish Chest data, visual displays}
+# ecdf plots
+plot(ecdf(data),main="Empirical cumulative distribution function of Stigler Scottish Chests")
+```
+
+![Figure 5 from Gallagher (2020) Histogram of pseudo-random normally distributed chest circumferences rounded to the nearest cm, with a normal fit.](..\images\GAE20Fig5.jpg)
+
+```{r Three plots of pseudorandom normal data}
+# Apply rnorm function, convert Stigler mean and var to cm
+datar <- rnorm(length(data), mean(data), sd(data))
+Stigler_r<-tibble(Chest_girth=datar)
+p5 = ggplot(Stigler_r, aes(x=Chest_girth)) +
+            geom_histogram(aes(y = ..density..), binwidth=0.2, colour="black", fill="white") +
+              labs(title="Pseudo-random normal Scottish Chest Girths", 
+            x= "Chest circumference (in.)", y = "Density") +
+            stat_function(fun = dnorm, lwd = 2, col = 'red', 
+                          args = list(mean = mean(Stigler_r$Chest_girth), 
+                                          sd = sd(Stigler_r$Chest_girth)))
+p5
+# Apply rnorm function, round normal data to nearest inch
+datarin <- round(rnorm(length(data), mean(data), sd(data)),0)
+Stigler_rin<-tibble(Chest_girth=datarin)
+p6 = ggplot(Stigler_rin, aes(x=Chest_girth)) +
+            geom_histogram(aes(y = ..density..), binwidth=1, colour="black", fill="white") +
+              labs(title="Pseudo-random normal Scottish Chest Girths", 
+            x= "Chest circumference (in.)", y = "Density") +
+            stat_function(fun = dnorm, lwd = 2, col = 'red', 
+                          args = list(mean = mean(Stigler_rin$Chest_girth), 
+                                          sd = sd(Stigler_rin$Chest_girth)))
+p6
+# Now plot an R version of Gallagher (2020) Figure 5
+datarcm <- round(rnorm(length(data), mean(data)*2.54, sd(data)*2.54),0)
+Stigler_rcm<-tibble(Chest_girth=datarcm)
+p7 = ggplot(Stigler_rcm, aes(x=Chest_girth)) +
+            geom_histogram(aes(y = ..density..), binwidth=1, colour="black", fill="white") +
+              labs(title="Pseudo-random normal Scottish Chest Girths", 
+            x= "Chest circumference (cm)", y = "Density") +
+            stat_function(fun = dnorm, lwd = 2, col = 'red', 
+                          args = list(mean = mean(Stigler_rcm$Chest_girth), 
+                                  sd = sd(Stigler_rcm$Chest_girth)))
+p7
+# Now plot data rounded to mm (25.4 mm to the inch)
+datarmm <- round(rnorm(length(data), mean(data)*25.4, sd(data)*25.4),0)
+Stigler_rmm<-tibble(Chest_girth=datarmm)
+p8 = ggplot(Stigler_rmm, aes(x=Chest_girth)) +
+            geom_histogram(aes(y = ..density..), binwidth=1, colour="black", fill="white") +
+              labs(title="Pseudo-random normal Scottish Chest Girths", 
+            x= "Chest circumference (mm)", y = "Density") +
+            stat_function(fun = dnorm, lwd = 2, col = 'red', 
+                          args = list(mean = mean(Stigler_rcm$Chest_girth), 
+                                  sd = sd(Stigler_rcm$Chest_girth)))
+p8
+```
+
+## Part 2) Fit the normality tests to compare to Gallagher (2020) Table 4
+
+* Tests for normality: books and reviews: D’Agostino (1986b), Thode (2002), Zar (2010) and Legendre & Legendre (2012)
+  - **Pearson's (1900) Chi-square test**
+    - the chi-square distribution is no longer in fashion because it is not very sensitive to departures from normality. Legendre & Legendre (2012 p 187-193)
+  - **Empirical Distribution Function (EDF) Tests**
+    - Anderson-Darling test; recommended by Legendre & Legendre (2012), but it is sensitive to ties
+    - Cramer - von Mises test, proposed in 1928 as an alternative to the K-S test
+    - Kolmogorov-Smirnov (K-S) test or tests based on the K-S test often used: maximum deviation between normal cdf and edf
+    - Lilliefors test, an improved version of the K-S test, not as subject to ties
+  - **Tests based on the normal probability plot (QQ plot)**
+    - Shapiro-Wilk/Francia W test
+  - **Tests based on skewness and kurtosis**
+    - D'Agostino - Pearson test
+    - Jarque Bera test
+
+![Table 4 from Gallagher (2020)](..\images\GAE20WQ_Table4.jpg)
+```{r fit normality tests}
+# Anderson-Darling tests from the nortest package
+AD<-adTest(DATA)
+AD
+ad<-adTest(data)
+ad
+AD_r<-adTest(datar)
+AD_r
+ad_rin<-adTest(datarin)
+ad_rin
+ad_rcm<-adTest(datarcm)
+ad_rcm
+ad_rmm<-adTest(datarmm)
+ad_rmm
+# Pearson's Chi-square normality test: Not working yet in R, Matlab is MUCH better
+# PearsonTest from DescTools
+PChi<-PearsonTest(DATA,adjust=FALSE)
+PChi
+pchi<-PearsonTest(data,adjust=FALSE)
+pchi
+pchi<-PearsonTest(datar,adjust=FALSE)
+pchi
+pchi<-PearsonTest(datarin,adjust=FALSE)
+pchi
+pchi<-PearsonTest(datarcm,adjust=FALSE)
+pchi
+pchi<-PearsonTest(datarmm,adjust=FALSE)
+pchi
+
+# Analyze with the nortest Pearson's chi-square test
+pearson.test(DATA)
+pearson.test(data)
+pearson.test(datar)
+pearson.test(datarin)
+pearson.test(datarcm)
+pearson.test(datarmm)
+
+# Cramer-von Mises normality test
+# Analyze with nortest cvm.test
+CVM<-cvm.test(DATA)
+CVM
+cvm<-cvm.test(data)
+cvm
+# Test statistic is correct 10.6 and 10.4, p values < 1e-9, not 0.003 like 
+# Gallagher (2020)
+cvm_r<-cvm.test(datar)
+cvm_r
+cvm_rin<-cvm.test(datarin)
+cvm_rin
+cvm_rcm<-cvm.test(datarcm)
+cvm_rcm
+cvm_rmm<-cvm.test(datarmm)
+cvm_rmm
+
+# fit the D'Agostino Pearson test
+DP<-dagoTest(DATA)
+DP
+dp<-dagoTest(data)
+dp
+# Statisics and p values match Gallagher(2020) Table 4
+dp_r<-dagoTest(datar)
+dp_r
+dp_rin<-dagoTest(datarin)
+dp_rin
+dp_rcm<-dagoTest(datarcm)
+dp_rcm
+dp_rmm<-dagoTest(datarmm)
+dp_rmm
+
+
+# fit the Jarque Bera Test
+jarqueberaTest(DATA)
+jarqueberaTest(data)
+# There ia a typo in Gallagher (2020) for the Jarque-Bera test. The test
+# statistics match, but Gallagher's p value should be 0.38 (p=0.3754) not 0.24
+JB <-jarqueberaTest(DATA)
+JB
+jb<-jarqueberaTest(data)
+jb
+jb_r<-jarqueberaTest(datar)
+jb_r
+jb_rin<-jarqueberaTest(datarin)
+jb_rin
+jb_rcm<-jarqueberaTest(datarcm)
+jb_rcm
+jb_rmm<-jarqueberaTest(datarmm)
+jb_rmm
+
+# fit the Kolmogorov--Smirnov normality test
+## fit with the fBasics package ksnormTest
+KS<-ksnormTest(DATA)
+KS
+ks<-ksnormTest(data)
+ks
+# ksnormTest produces a warning that ks.test should not be used with ties. 
+# The low p values match
+ks_r<-ksnormTest(datar)
+ks_r
+ks_rin<-ksnormTest(datarin)
+ks_rin
+ks_rcm<-ksnormTest(datarcm)
+ks_rcm
+ks_rmm<-ksnormTest(datarmm)
+ks_rmm
+
+# A different ks test from the base stats package
+ks.test(DATA, 'pnorm')
+ks.test(data, 'pnorm')
+ks.test(datar, 'pnorm')
+ks.test(datarin, 'pnorm')
+ks.test(datarcm, 'pnorm')
+ks.test(datarmm, 'pnorm')
+
+# Lilliefors (Kolmogorov-Smirnov) test from the 'nortest' package
+L<-lillieTest(DATA)
+L
+l<-lillieTest(data)
+l
+# R produced 2.2e-16 for p, Matlab stops at 0.001
+l_r<-lillieTest(datar)
+l_r
+l_rin<-lillieTest(datarin)
+l_rin
+l_rcm<-lillieTest(datarcm)
+l_rcm
+l_rmm<-lillieTest(datarmm)
+l_rmm
+
+# Fit the Shapiro-Wilk statistic (upper limit of 5000)
+## fit with the base stats shapiro.test
+shapiro.test(sample(DATA,5000))
+shapiro.test(sample(data,5000))
+# These results match, Gallagher (2020) erroneously used 0 for the p value
+# but R uses 2.2e-16, or eps.
+shapiro.test(sample(datar,5000))
+shapiro.test(sample(datarin,5000))
+shapiro.test(sample(datarcm,5000))
+shapiro.test(sample(datarmm,5000))
+
+## fit with the nortest sfTest
+sfTest(sample(DATA,5000))
+sfTest(sample(data,5000))
+# These results match, Gallagher (2020) erroneously used 0 for the p value
+# but R uses 2.2e-16, or eps.
+sfTest(sample(datar,5000))
+sfTest(sample(datarin,5000))
+sfTest(sample(datarcm,5000))
+sfTest(sample(datarmm,5000))
+```
+
+***
+![Gallagher (2020) Fig 6 with Matlab default random seed](..\images\GAE20Fig6.jpg)
+
+***
+
+![An unpublished modfification of Gallagher (2020) Fig 6 with random seeds](..\images\GAE20Fig6_noseed.jpg)
+
+# Sleuth Chapter 18
+
+![Definition of odds](..\images\Slide_Odds.jpg)
+
+***
+
+![Definition of risk ratio](..\images\Slide_Risk.jpg)
+
+***
+
+![Odds vs. Risk Ratios](..\images\Slide_Odds_Risk.jpg)
+
+***
+
+![Log odds ratio](..\images\Slide_logOdds.jpg)
+
+***
+
+![Two Standard Errors for the log odds ratio](..\images\Slide_2SElogOdds.jpg)
+
+***
+
+![Definition of independence](..\images\Slide_Independence.jpg)
+
+***
+
+![Contingency table tests of homogeneity and independence](..\images\Slide_Homogeneity_Independence.jpg)
+
+***
+
+![Sampling Schemes (1 of 2)](..\images\Slide_SamplingSchemes1.jpg)
+
+***
+
+![Sampling schemed (2 of 2)](..\images\Slide_SamplingSchemes2.jpg)
+
+***
+
+![Sampling schemes and appropriate hypotheses](..\images\Display1903.jpg)
+
+***
+
+![Prospective binomial or randomized experiment](..\images\Display1810.jpg)
+
+***
+
+![Estimable parameters for sampling schemes](..\images\Display1904.jpg)
+
+***
+
+# Statistical Sleuth Chapter 18 Comparisons of Proportions or Odds
+
+## Sleuth Case Study 18.01 Obesity in Samoan women
+
+
+![Case Study 18.1](..\images\Display1801.jpg)
+
+***
+
+![Sleuth Display 18.4](..\images\Display1804.jpg)
+
+***
+
+![Brown et al. 2001](..\images\Brownetal.jpg)
+
+***
+
+![Brown et al. 2001](..\images\BrownCIs.jpg)
+
+***
+
+![Brown et al. 2001 Figure 5](..\images\BrownetalFig5.jpg)
+
+***
+
+![BinomCI vignette](..\images\BinomCI_DescTools.jpg)
+
+***
+
+```{r}
+# Use the 1-sample binomial for Zaret's data. 40/44 for the larger phenotype.
+
+BinomCI(x=40, n=44, 
+        method=eval(formals(BinomCI)$method))   # return all methods
+```
+
+
+![Standard error and CI for two proportions](..\images\Slide_SE_2p.jpg)
+
+***
+
+![Large sample approximation for the standard error](..\images\Slide_SE_Combinedp.jpg)
+
+***
+
+![Sleuth Display 18.5](..\images\Display1805.jpg)
+
+***
+
+![Sleuth Display 18.5](..\images\Display1805.jpg)
+
+***
+
+![Sleuth Display 18.5](..\images\Display1808.jpg)
+
+***
+
+![Sleuth Display 18.5](..\images\Slide_SPSS_1801.jpg)
+
+### Sleuth R code for Case Study 18.1 Obesity and Heart Disease
+
+```{r Sleuth Case Study 18.1}
+str(case1801)
+attach(case1801)
+## EXPLORATION
+myTable             <- cbind(Deaths,NonDeaths)  # Form a 2 by 2 table of counts
+row.names(myTable)  <- Obesity  # Assign the levels of Obesity as row names  
+myTable   # Show the table
+
+## INFERENCE (4 methods for getting p-values and confidence intervals)
+prop.test(myTable, alternative="greater", correct=FALSE) # Compare 2 proportions
+prop.test(myTable, alternative="greater", correct=TRUE) # ...with continuity correction.  
+prop.test(myTable,correct=TRUE) # 2-sided alternative (default) to get CI
+chisq.test(myTable) # Pearson's Chi-Squared Test
+fisher.test(myTable, alternative="greater") # Fisher's exact test  
+fisher.test(myTable) # 2-sided alternative to get CI for odds ratio
+```
+
+#### Binomial logistic regression for Case Study 18.1
+
+```{r Sleuth Case Study 18.01 Binomial logistic regression}
+myGlm1  <- glm(myTable ~ Obesity, family=binomial)  # Logistic regression (CH 21)
+summary(myGlm1)  # Get p-value-- 0.734
+beta    <- myGlm1$coef
+exp(beta[2])  #Odds of death are estimated to be 17% higher for  obese women 
+exp(confint(myGlm1,2)) # 95% confidence interval
+```
+
+#### Graphical Display of Case Study 18.1 for presentation
+
+```{r Sleuth Case Study Graphical Display}
+myTable
+#        Deaths NonDeaths
+#Obese        16      2045
+#NotObese      7      1044
+prop.test(16,(16+2045)) #For one proportion, est: 0.0078 95% CI: 0.0046 to 0.013
+prop.test(7,(7+1044)) #For one proportion, est: 0067 95% CI: 0.0029 to 0.014
+pHat    <- c(0.007763222, 0.006660324)*1000 # Get estimated deaths per 1,000 women
+lower95 <- c(0.00459943, 0.002921568)*1000
+upper95 <- c(0.01287243, 0.014318321)*1000
+
+myObj   <- Cbind(pHat,lower95,upper95) 
+Dotplot(Obesity ~ myObj,   # Draw a dot plot of estimates and CIs
+          xlab="Estimated CVD Deaths Per 1,000 Women (and 95% Confidence Intervals)",
+          ylab="Weight Category", ylim=c(.5,2.5), cex=2)
+detach(case1801)
+```
+
+## Sleuth Case Study 18.2 Vitamin C and the Common Cold
+
+![Sleuth Display 18.2](..\images\Display1802.jpg)
+
+***
+
+![Sleuth Display 18.6](..\images\Display1806.jpg)
+
+***
+
+![Sleuth Display 18.7](..\images\Display1807.jpg)
+
+***
+
+![Sleuth Display 18.9](..\images\Display1809.jpg)
+### R Code for Case Study 18.2 Vitamin C and the Common cold
+
+
+### R Sleuth Code for Case Study 18.2
+
+```{r Sleuth Case Study 18.02}
+
+str(case1802)
+attach(case1802) 
+
+## INFERENCE (4 methods)
+myTable <- cbind(Cold,NoCold)
+row.names(myTable) <- c("Placebo","Vitamin C")
+myTable
+prop.test(myTable, alternative="greater") # Compare 2 binomial proportions 
+# Alternative: pop prop. of first column (cold) in larger in first row (placebo)    
+prop.test(myTable, alternative="greater", correct=TRUE)   
+prop.test(myTable,correct=TRUE) # Use 2-sided alternative to get CI    
+chisq.test(myTable)   # Chi-square test
+fisher.test(myTable, alternative="greater")
+fisher.test(myTable) #  2-sided alternative to get CI for odds ratio
+myGlm1  <- glm(myTable ~ Treatment, family=binomial) # logistic reg (Ch 21)
+summary(myGlm1)
+beta    <- myGlm1$coef
+1 - exp(beta[2])  # 0.3474911
+1 - exp(confint(myGlm1,2)) # 0.53365918 0.09042098
+# Interpretation: The odds of getting a cold are 35% less on Vitamin C than 
+# Placebo (95% confidence interval: 9% to 53% less).
+
+detach(case1802)
+```
+
+***
+
+## Sleuth Case Study 18.3 Smoking and Lung Cancer --- A Retrospective Observational Study
+
+
+![Sleuth Display 18.3](..\images\Display1803.jpg)
+
+***
+
+![Sleuth Display 18.6](..\images\Display1811.jpg)
+
+- One can't estimate the probability of a smoker getting cancer from a retrospective analysis
+
+***
+
+![Sleuth Display 18.7](..\images\Display1904.jpg)
+***
+
+### R Code for Case Study 18.3
+
+```{r Sleuth Case Study 18.03}
+str(case1803)
+attach(case1803)
+
+## INFERENCE
+myTable   <- cbind(Cancer,Control)   # Make a 2-by-2 table of counts 
+row.names(myTable)  <- Smoking   # Assign the levels of Smoking as row names  
+myTable   
+
+fisher.test(myTable,  alternative="greater")  # Alternative: that odds of Cancer 
+# in first row are greater.
+fisher.test(myTable) # 2-sided alternative to get CI for odds ratio
+myGlm1  <- glm(myTable ~ Smoking, family=binomial) # logistic reg (Ch 21)
+summary(myGlm1)
+exp(myGlm1$coef[2]) # 5.37963 : Estimated odds ratio
+exp(confint(myGlm1)[2,]) #  1.675169 24.009510:  Approximate confidence interval
+# Interpretation: The odds of cancer ar 5.4 times as large for smokers as for 
+# non-smokers (95% confidence interval: 1.7 to 24.0 times as large).
+```
+
+# Sleuth Chapter 19: More Tools for Tables of Counts
+
+***
+
+## Sleuth Case Study 19.1 Sex Role Stereotypes and Personnel Decisions---A Randomized Experiment
+
+![Sleuth Display 19.1](..\images\Display1901.jpg)
+
+***
+
+![Chi square test is a test for homogeneity](..\images\Slide_ChiSquareHomogeneity.jpg)
+
+***
+
+![Cochran's Rule](..\images\Slide_Cochran.jpg)
+
+***
+
+![Fisher's Exact Test](..\images\Slide_FisherExact.jpg)
+
+***
+
+![Salsburg (2001)](..\images\Slide_Salsburg.jpg)
+
+***
+
+![Fisher's Exact Test for Case Study 19.1](..\images\Slide_Fisher1901.jpg)
+
+***
+
+### Sleuth R code for Case Study 19.1
+
+```{r Sleuth Case Study 19.01}
+str(case1901)
+attach(case1901)
+
+## INFERENCE
+myTable             <- cbind(Promoted,NotPromoted)    
+row.names(myTable)  <- Gender    
+myTable   
+fisher.test(myTable, alternative="greater")  
+# Alternative: that odds of Promotion in first row (Males) are greater.
+fisher.test(myTable)  # Use 2-sided to get confidence interval for odds ratio
+prop.test(myTable) # Compare two binomial proportions
+# gtest from the AMR package, more accurate than chi square, but evaluated
+# with the chi square distribution
+g.test(myTable)
+```
+
+#### Graphical Display of Case 19.1
+
+```{r Sleuth Case Study 19.1 Graphical Display of Case 19.1}
+## GRAPHICAL DISPLAY FOR PRESENTATION
+myTable
+#         Promoted NotPromoted
+#Male         21           3
+#Female       14          10
+prop.test(21,(21+3)) # Est = .875; CI = .665 to .967  
+prop.test(14,(14+10))# Est = .583; CI = .369 to .772  
+
+pHat   <- c(0.875,0.583)       
+lower95 <- c(0.665, 0.369)
+upper95 <- c(0.967, 0.772)
+# Use Hmisc library
+myObj<- Cbind(pHat,lower95,upper95) # Cbind: a form of cbind needed for Dotplot 
+Dotplot(Gender ~ myObj,  
+        xlab="Probability of Promotion Based on Applicant File (and 95% Confidence Intervals)",
+        ylab="Gender Listed in Applicant File", ylim=c(.5,2.5), cex=2)
+detach(case1901)
+```
+
+***
+
+![Henry et al. 2012 on Neonicitinoid pesticides](..\images\Slide_Henry.jpg)
+
+
+***
+
+![Gallagher Letter to Science (not published)](..\images\Slide_GallagherLetter.jpg)
+
+***
+
+![Henry et al. (2012) Experiment 1](..\images\Slide_HenryExpt1.jpg)
+
+***
+
+![October 22, 2022 VOA article on neonicitinoid pesticides](..\images\VOA_Bees.jpg)
+
+***
+
+![Lundolf et al. 2015 on harmful effects of Neonicitinoids](..\images\Slide_Lundolf.jpg)
+
+
+***
+
+![Lundolf et al. (2015) GLMM](..\images\Slide_GLMM.jpg)
+
+***
+
+![Schneider RFID tracking of bees](..\images\Slide_Schneider.jpg)
+
+***
+
+![Odds & 'In the Heart of the Sea'](..\images\Slide_Essex1.jpg)
+
+***
+
+![Odds of dying in the whaleboats](..\images\Slide_Essex2.jpg)
+
+***
+
+![SPSS cross tabulation of Essex data](..\images\Slide_Essex3.jpg)
+
+***
+
+![SPSS summary of contingency table tests](..\images\Slide_Essex4.jpg)
+
+***
+
+![Small sample sizes invalidate all but Fisher's test](..\images\Slide_Essex5.jpg)
+
+## Whaleship Essex R code
+
+```{r Whaleship Essex R code}
+myTable <- matrix(c(5,1,4,7), nrow = 2, ncol = 2, byrow = TRUE,
+                  dimnames = list(c("Black", "White"),c("Died", "Survived")))
+myTable   # Show the table
+## INFERENCE (4 methods for getting p-values and confidence intervals)
+prop.test(myTable, alternative="greater", correct=FALSE) # Compare 2 proportions
+prop.test(myTable, alternative="greater", correct=TRUE) # ...with Yates continuity correction
+prop.test(myTable,correct=TRUE) # 2-sided alternative (default) to get CI
+chisq.test(myTable) # Pearson's Chi-Squared Test
+fisher.test(myTable, alternative="greater") # Fisher's exact test, 1-tailed
+fisher.test(myTable) # 2-sided alternative to get CI for odds ratio
+```
+
+**Conclusion: The odds of a black Whaler on the Essex dying was 8 times that of a white whaler, but the 95% confidence interval was 0.5 to 500 (p = 0.13)**
+
+# Sleuth Case Study 19.2
+
+![Sleuth Display 19.2](..\images\Display1902.jpg)
+
+***
+
+![Sleuth Display 19.5](..\images\Display1905.jpg)
+
+***
+
+![The Mantel-Haenszel Test](..\images\Slide_Mantel.jpg)
+
+***
+
+![Mantel Test of Case 19.2](..\images\Mantel1902.jpg)
+
+***
+
+![Resutls of Mantel-Haenszel Test of Case 19.2](..\images\Slide_Mantel_Results.jpg)
+
+***
+
+### r code for Sleuth Case Study 19.2
+
+```{r r code for Sleuth Case Study 19.2}
+str(case1902)
+attach(case1902)
+## EXPLORATION
+proportionDeath  <- Death/(Death + NoDeath)
+myPointCode <- ifelse(Victim=="White",22,24)
+myPointColor <- ifelse(Victim=="White","white","black")
+plot(proportionDeath ~ Aggravation, pch=myPointCode, bg=myPointColor)
+oddsOfDeath <- Death/(NoDeath + .5)  # Add .5 to the demoninator to avoid 0's 
+plot(oddsOfDeath ~ Aggravation, pch=myPointCode, bg=myPointColor)
+plot(oddsOfDeath ~ Aggravation, log="y", pch=myPointCode, bg=myPointColor)
+```
+
+#### r logistic regression of Case Study 19.2 data
+
+```{r logistic regression code for Sleuth Case Study 19.2}
+
+myGlm1 <- glm(cbind(Death,NoDeath) ~ Aggravation + Victim + 
+                Aggravation:Victim, family=binomial) # Logistic reg with interaction
+myGlm2  <- update(myGlm1, ~ . - Aggravation:Victim) # without interaction
+anova(myGlm2, myGlm1) # no evidence of interaction.
+```
+
+### INFERENCE: Mantel Haenszel Test of Case Study 19.2
+
+
+```{r Mantel-Haenszel Test of Case Study 19.2 data}
+myTable <- array(rbind(Death, NoDeath), dim=c(2,2,6),
+                 dimnames=list(Penalty=c("Death","No Death"), Victim=c("White","Black"),
+                               Aggravation=c("1","2","3","4","5","6")))
+myTable   # Show the 6 2x2 tables
+mantelhaen.test(myTable, alternative="greater", correct=FALSE) # 1-sided p-value
+mantelhaen.test(myTable, alternative="greater") # with continuity correction
+mantelhaen.test(myTable) # two.sided (default) for confidence interval
+```
+
+**Interpretation of Mantel-Haenszel analysis: The odds of death penalty for black defendants for a white victim murderer are estimated to be 5.5 times the odds of death penalty for for black victim murderers with similar aggravation level (95% confidence interval: 1.9 to 16 times, p = 0.002)** 
+
+### Logistic Regression (Ch 21), treating aggravation level as numerical
+```{r Logistic regression of Case Study 19.2 data}
+summary(myGlm2) # p =0.000732
+beta  <- myGlm2$coef
+exp(beta[3])   #   6.1144 
+exp(confint(myGlm2,3)) # 2.23040 18.72693
+```
+
+**Interpretation of the logistic regression: The odds of death penalty for a black defendant if the victim is white is estimated to be 6 times the odds of death penalty for black victim murders with similar aggravation level(95% confidence interval: 2 to 20 times, p < 0.0001)** 
+
+## GRAPHICAL DISPLAY OF CASE 19.2 FOR PRESENTATION
+
+```{r Presentation Graphical Display of Case 19.2}
+myPointColor     <- ifelse(Victim=="White","green", "orange")
+plot(jitter(proportionDeath,.1) ~ jitter(Aggravation,.1), 
+     xlab="Aggravation Level of the Murder", 
+     ylab="Proportion of Murderers Who Received Death Penalty",
+     pch=myPointCode, bg=myPointColor, cex=2, lwd=2)
+legend(1,1, c("White Victim Murderers","Black Victim Murderers"), pch=c(21,22),
+       pt.cex=c(2,2), pt.bg=c("green","orange"), pt.lw=c(2,2))
+# Include logistic regression fit on plot
+dummyAg <- seq(min(Aggravation),max(Aggravation),length=50)
+etaB    <- beta[1] + beta[2]*dummyAg
+etaW    <- etaB + beta[3]
+pB      <- exp(etaB)/(1 + exp(etaB))  # Estimated prob of DP; Black victim 
+pW      <- exp(etaW)/(1 + exp(etaW))  # Estimated prob of DP; White victim
+lines(pB ~ dummyAg,lty=1)   
+lines(pW ~ dummyAg,lty=2)              
+detach(case1902)
+```
+
+* Notes about Mantel-Haenszel test
+
+  - Assumes the odds ratio the same in each 2x2 table
+  - The p-value is approximate, based on large sample size, sum of expected cell counts should be at least 5 for each of the 4 cells
+  - The Mantel-Haenszel test treats the different levels of the confounding variable as nominal, ignoring quantitative structure.
+  - It is possible to use logistic regression (Chapter 20 & 21) to include aggravation level or other covariates, nominal, ordinal or scale
+  - The Mantel-Haenszel test is appropriate for prospective and retrospective observational data as well as for randomized experiments
+
+***
+
+**Case Study 19.2 looked at the odds of the death penalty only for black defendants, but what are the odds of a black defendant getting the death penalty after accounting for the race of the victim? That analysis is presented in Agresti (1996)** 
+
+![Agresti's (1996) analysis of race & the death penalty](..\images\Slide_Agresti1.jpg)
+
+***
+
+![Agresti's (1996) analysis of race & the death penalty](..\images\Slide_Agresti2.jpg)
+
+***
+
+![Agresti's (1996) analysis of race & the death penalty](..\images\Slide_Agresti3.jpg)
+
+
+***
+
+![Agresti's (1996) analysis of race & the death penalty](..\images\Slide_Agresti4.jpg)
+
+***
+
+![Agresti's (1996) analyses, an example of Simpson's paradox](..\images\Slide_Agresti5.jpg)
+
+* **Conclusions from Chapters 18 & 19**
+
+- Two hypotheses are tested, often with the same statistical test
+
+  - Homogeneity (2 populations)
+  
+  - Independence (cross classification of 1 population)
+  
+- Odds and Risk Ratios are both used to describe proportions, don't mix up interpretation
+
+- Sampling schemes that give rise to 2 x 2 contingency tables
+
+- Don’t trust normal approximation for 1-sample binomial test, use binomial cumulative frequency distribution to find confidence intervals or Agresti-Coull or Wilson intervals
+
+- Two standard errors for proportions and log odds ratios (for testing differences in proportions and log odds ratios or 95% CI’s for equality)
+
+- Chi-square test for homogeneity
+
+- Fisher’s exact hypergeometric test (appropriate for **all** contingency tables, small or large)
+
+- Mantel-Haenszel test to test the effects of a covariate on the common odds ratio (tests better performed with generalized linear models (Chapters 20 & 21)
