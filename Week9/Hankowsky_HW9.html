@@ -488,52 +488,58 @@ would be excepted under the null hypothesis (one-sided p-value &lt;
 </div>
 <div id="section-1" class="section level2">
 <h2>19.23</h2>
-<p>Who Looks After the Kids? Exercises 10.31 and 17.13 considered data
-on clutch volume and body mass to investigate the similarities of
-dinosaurs with several groups of currently living animals. One issue
-concerning the validity of the study is the selection of the bird
-species in the set of currently living animals. Were species (i)
-selected at random? (ii) stratified by group and selected within group
-at random? (iii) selected based on what information was available? or
-(iv) selected to support the study conclusions? Ignore the possibility
-of (iv). If the answer is (i) or (ii) then that would not cause any
-problem with the analyses performed, but (iii) could potentially result
-in biased sampling and therefore incorrect conclusions. Furthermore,
-(iii) seems like themost probable form of sampling of the modern groups
-and almost certainly the form of sampling among the dinosaur groups.</p>
-<p>One way to assess the likelihood (iii) for birds is to compare the
-numbers of species from each of the 29 orders in the study with the
-known total number of species in each of the orders, as shown in Display
-19.14. If the selection of birds had been at random, the expected
-proportion of species in the study from one particular order, n, is the
-proportion of all species in that order (N=9,866) times the total number
-of species in the sample (414). That is, the expected number in each
-sample, if random sampling were used, is .N=9,866/ ! 414. Calculate the
-expected numbers and compare the observed numbers with them using
-Pearson’s chi-square statistic. It will have 29 ” 1 D 28 d.f. What do
-you conclude?</p>
-<pre class="r"><code>birds &lt;- Sleuth3::ex1923
+<pre class="r"><code>#Read-In the data
+birds &lt;- Sleuth3::ex1923
 
-birds1 &lt;- birds %&gt;%
+birds &lt;- birds %&gt;%
   mutate(expected_n = (N/9866)*414) %&gt;%
-  mutate(x = ((n-expected_n)^2)/expected_n) %&gt;%
-  mutate(x2 = sum(x))
+  mutate(expected_n2 = (N/sum(N))*sum(n)) %&gt;%  #just making sure the calculation given by the textbook is the same as that given by prof Gallagher; it is 
+  mutate(x = ((n-expected_n)^2)/expected_n) 
 
-chisq.test(birds1$expected_n, birds1$n)</code></pre>
-<pre><code>## Warning in chisq.test(birds1$expected_n, birds1$n): Chi-squared approximation
-## may be incorrect</code></pre>
-<pre><code>## 
-##  Pearson&#39;s Chi-squared test
-## 
-## data:  birds1$expected_n and birds1$n
-## X-squared = 377, df = 364, p-value = 0.3082</code></pre>
-<pre class="r"><code>fisher.test(birds1$expected_n, birds1$n)</code></pre>
-<pre><code>## 
-##  Fisher&#39;s Exact Test for Count Data
-## 
-## data:  birds1$expected_n and birds1$n
-## p-value = 1
-## alternative hypothesis: two.sided</code></pre>
+#just sorting the expected values
+birds %&gt;%
+  arrange(expected_n)</code></pre>
+<pre><code>##                  Order    N   n   expected_n  expected_n2            x
+## 1    Opisthodomiformes    1   0   0.04196229   0.04196229 4.196229e-02
+## 2       Casuariiformes    4   2   0.16784918   0.16784918 1.999877e+01
+## 3  Phoenicopteriformes    5   1   0.20981147   0.20981147 2.975995e+00
+## 4          Coliiformes    6   1   0.25177377   0.25177377 2.223593e+00
+## 5     Struthioniformes   10   5   0.41962295   0.41962295 4.999692e+01
+## 6       Pterocliformes   16   3   0.67139672   0.67139672 8.076288e+00
+## 7      Sphenisciformes   17   1   0.71335901   0.71335901 1.151777e-01
+## 8     Podicipediformes   22   1   0.92317048   0.92317048 6.394024e-03
+## 9      Musophagiformes   23   1   0.96513278   0.96513278 1.259643e-03
+## 10       Trogoniformes   39   2   1.63652950   1.63652950 8.072620e-02
+## 11        Tinamiformes   47  19   1.97222785   1.97222785 1.470140e+02
+## 12       Galbuliformes   54   2   2.26596392   2.26596392 3.121709e-02
+## 13      Pelecaniformes   65   6   2.72754916   2.72754916 3.926211e+00
+## 14   Procellariiformes  108   5   4.53192783   4.53192783 4.834401e-02
+## 15       Ciconiiformes  114  14   4.78370160   4.78370160 1.775616e+01
+## 16    Caprimulgiformes  118   8   4.95155078   4.95155078 1.876794e+00
+## 17        Anseriformes  150   5   6.29434421   6.29434421 2.661639e-01
+## 18        Cuculiformes  159   3   6.67200487   6.67200487 2.020925e+00
+## 19          Gruiformes  204  21   8.56030813   8.56030813 1.807715e+01
+## 20        Strigiformes  209   2   8.77011960   8.77011960 5.226214e+00
+## 21       Coraciiformes  213   8   8.93796878   8.93796878 9.843237e-02
+## 22         Galliformes  281  24  11.79140482  11.79140482 1.264055e+01
+## 23       Falconiformes  308  31  12.92438678  12.92438678 2.527995e+01
+## 24       Columbiformes  309   2  12.96634908  12.96634908 9.274840e+00
+## 25     Charadriiformes  343  62  14.39306710  14.39306710 1.574661e+02
+## 26          Piciformes  344   2  14.43502939  14.43502939 1.071213e+01
+## 27      Psittaciformes  353   1  14.81269005  14.81269005 1.288020e+01
+## 28         Apodiformes  424   3  17.79201297  17.79201297 1.229786e+01
+## 29       Passeriformes 5920 179 248.41678492 248.41678492 1.939760e+01</code></pre>
+<pre class="r"><code>#sum the expected values
+chi2 &lt;- sum(birds$x) 
+  
+#calculating the p-value for the chi-squared statistic with 28df, using 1-pchisq to get the area to the right of the curve
+1-pchisq(chi2, 28)</code></pre>
+<pre><code>## [1] 0</code></pre>
+<p><br></p>
+<p>This data provides overwhelming evidence that the selection of birds
+was not random (p-value &lt; 0.00001). Thus, the selection of bird
+species is most likely based on the information that was available which
+could result in biased sampling and incorrect conclusions.</p>
 <p><br></p>
 <hr />
 </div>

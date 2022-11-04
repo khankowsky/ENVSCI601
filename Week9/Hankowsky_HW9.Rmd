@@ -56,7 +56,7 @@ sqrt(0.001024426)
 
 
 #or just a one sample biomial tests
-binom.test(142,198, p = 1/2, alternative = "greater")
+# binom.test(142,198, p = 1/2, alternative = "greater")
 
 
 # PRESENTATION PLOT 
@@ -92,40 +92,31 @@ These results provide overwhelming evidence that the odds of infantile paralysis
 ***
 
 ## 19.23
-
-Who Looks After the Kids? Exercises 10.31 and 17.13 considered data on clutch volume and
-body mass to investigate the similarities of dinosaurs with several groups of currently living animals.
-One issue concerning the validity of the study is the selection of the bird species in the set of currently
-living animals. Were species (i) selected at random? (ii) stratified by group and selected within group
-at random? (iii) selected based on what information was available? or (iv) selected to support the
-study conclusions? Ignore the possibility of (iv). If the answer is (i) or (ii) then that would not cause
-any problem with the analyses performed, but (iii) could potentially result in biased sampling and
-therefore incorrect conclusions. Furthermore, (iii) seems like themost probable form of sampling of
-the modern groups and almost certainly the form of sampling among the dinosaur groups. 
-
-One way
-to assess the likelihood (iii) for birds is to compare the numbers of species from each of the 29 orders
-in the study with the known total number of species in each of the orders, as shown in Display 19.14.
-If the selection of birds had been at random, the expected proportion of species in the study from one
-particular order, n, is the proportion of all species in that order (N=9,866) times the total number of
-species in the sample (414). That is, the expected number in each sample, if random sampling were
-used, is .N=9,866/ ! 414. Calculate the expected numbers and compare the observed numbers with
-them using Pearson’s chi-square statistic. It will have 29 " 1 D 28 d.f. What do you conclude?
-
 ```{r}
 #Read-In the data
 birds <- Sleuth3::ex1923
 
-birds1 <- birds %>%
+birds <- birds %>%
   mutate(expected_n = (N/9866)*414) %>%
-  mutate(x = ((n-expected_n)^2)/expected_n) %>%
-  mutate(x2 = sum(x))
+  mutate(expected_n2 = (N/sum(N))*sum(n)) %>%  #just making sure the calculation given by the textbook is the same as that given by prof Gallagher; it is 
+  mutate(x = ((n-expected_n)^2)/expected_n) 
 
-chisq.test(birds1$expected_n, birds1$n)
+#just sorting the expected values
+birds %>%
+  arrange(expected_n)
+
+#sum the expected values
+chi2 <- sum(birds$x) 
+  
+#calculating the p-value for the chi-squared statistic with 28df, using 1-pchisq to get the area to the right of the curve
+1-pchisq(chi2, 28)
 
 
-fisher.test(birds1$expected_n, birds1$n)
 ```
+
+<br>
+
+This data provides overwhelming evidence that the selection of birds was not random (p-value < 0.00001). Thus, the selection of bird species is most likely based on the information that was available which could result in biased sampling and incorrect conclusions. 
 
 <br>
 
