@@ -1,0 +1,231 @@
+---
+title: "Hankowsky_HW10"
+output: html_document
+date: "2022-11-10"
+---
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+library(GGally)
+library(gridExtra)
+library(olsrr)
+library(car)
+library(Hmisc)
+library(MASS)
+
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 20.16
+
+Bumpus Natural Selection Data. Hermon Bumpus analyzed various characteristics of some
+house sparrows that were found on the ground after a severe winter storm in 1898. Some of the
+sparrows survived and some perished. The data on male sparrows in Display 20.17 are survival
+status (1 D survived, 2 D perished), age (1 D adult, 2 D juvenile), the length from tip of beak to tip
+of tail (in mm), the alar extent (length from tip to tip of the extended wings, in mm), the weight in
+grams, the length of the head in mm, the length of the humerus (arm bone, in inches), the length of
+the femur (thigh bones, in inches), the length of the tibio-tarsus (leg bone, in inches), the breadth of
+the skull in inches, and the length of the sternum in inches. (A subset of this data was discussed in
+Exercise 2.21.)
+Analyze the data to see whether the probability of survival is associated with physical characteristics
+of the birds. This would be consistent, according to Bumpus, with the theory of natural
+selection: those that survived did so because of some superior physical traits. Realize that (i) the
+sampling is from a population of grounded sparrows, and (ii) physical measurements and survival
+are both random. (Thus, either could be treated as the response variable.)
+
+```{r}
+#read in the data
+sparrows <- Sleuth3::ex2016
+
+#take a look at the dataset 
+head(sparrows)
+
+#scatterplot matrix
+ggpairs(sparrows, columns = 2:11, ggplot2::aes(color = Status))
+
+
+#run the model 
+#reorder
+sparrows <- sparrows %>%
+  mutate(AG = as.factor(AG))
+
+sparrow_glm <- glm(Status ~ AG + TL + WT + BH + HL + FL + TT + SK + KL, family = binomial, data = sparrows)
+
+crPlots(sparrow_glm)
+
+#looks like there an effect of TL, WT, HL, and maybe a slight KL 
+#after accounting for other variables
+
+# REGRESSION ANALYSIS USING BACKWARD ELIMINATION
+sparrow_glm1 <- glm(Status ~ AG + TL + WT + BH + HL + FL + TT + SK + KL, family = binomial, data = sparrows)
+summary(sparrow_glm1)
+
+
+sparrow_glm2 <- update(sparrow_glm1, ~ . - AG)
+summary(sparrow_glm2)
+
+
+sparrow_glm3 <- update(sparrow_glm2, ~ . - FL)
+summary(sparrow_glm3)
+
+
+sparrow_glm4 <- update(sparrow_glm3, ~ . - TT)
+summary(sparrow_glm4)
+
+
+sparrow_glm5 <- update(sparrow_glm4, ~ . - SK)
+summary(sparrow_glm5)
+
+
+sparrow_glm6 <- update(sparrow_glm5, ~ . - BH)
+summary(sparrow_glm6)
+
+
+
+```
+
+<br>
+
+
+<br>
+
+***
+
+## 21.18
+
+HIV and Circumcision. Researchers in Kenya identified a cohort of more than 1,000 prostitutes
+who were known to be a major reservoir of sexually transmitted diseases in 1985. It was
+determined that more than 85% of them were infected with human immunodeficiency virus (HIV)
+in February 1986. The researchers then identified men who acquired a sexually transmitted disease
+from this group of women after the men sought treatment at a free clinic. Display 21.22 shows the
+subset of those men who did not test positive for the HIV on their first visit and who agreed to participate
+in the study. The men are categorized according to whether they later tested positive for HIV
+during the study period, whether they had one or multiple sexual contacts with the prostitutes, and
+whether they were circumcised. Describe how the odds of testing positive are associated with number
+of contacts and with whether the male was circumcised. (Data from D. W. Cameron et al., “Female
+to Male Transmission of Human Immunodeficiency Virus Type 1: Risk Factors for Seroconversion
+in Men,” The Lancet (1989): 403–07.)
+
+```{r}
+#read in the data
+HIV <- Sleuth3::ex2118
+
+#take a look at the dataset
+head(HIV)
+
+
+
+
+
+```
+
+<br>
+
+
+<br>
+
+***
+
+# Supplemental Problems 
+## 20.20
+
+Factors Associated with Self-Esteem. Reconsider the NLSY79 data in Exercise 12.23. The
+variable Esteem1 is the respondent’s degree of agreement in 2006 with the statement “I feel that I’m
+a person of worth, at least on equal basis with others,” with values of 1, 2, 3, and 4 signifying strong
+agreement, agreement, disagreement, or strong disagreement, respectively. Construct a new binary
+response variable from this, which takes on the value 1 for strong agreement and 0 for agreement,
+disagreement, or strong disagreement. Explore the dependence of the probability that a person has
+positive self-esteem (as indicated by a response of strong agreement on Esteem1) on these explanatory
+variables: log annual income in 2005 (Income2005), intelligence as measured by the AFQT
+score in 1981 (AFQT), years of education (Educ), and gender (Gender).
+
+```{r}
+#read in the data
+esteem <- Sleuth3::ex1223
+
+#take a look at the dataset
+head(esteem)
+
+#construct variables as illustrated in the problem 
+esteem <- esteem %>%
+  select(Income2005, AFQT, Educ, Gender, Esteem1) %>%
+  mutate(response_var = case_when(
+    Esteem1 == 1 ~ 1, 
+    Esteem1 %in% c(2,3,4) ~ 0)) %>%
+  mutate(response_var = as.factor(response_var), 
+         log_income = log(Income2005)) %>%
+  relocate(response_var) %>%
+  relocate(log_income, .after = Income2005)
+
+#take a look at the new dataset
+head(esteem)
+
+#scatterplot matrix
+ggpairs(esteem, columns = 3:5, ggplot2::aes(color = response_var))
+
+
+
+#run the full model 
+esteem_glm <- glm(response_var ~ log_income + AFQT + Educ + Gender, family = binomial, data = esteem)
+
+crPlots(esteem_glm)
+
+
+# REGRESSION ANALYSIS USING BACKWARD ELIMINATION
+esteem_glm1 <- glm(response_var ~ log_income + AFQT + Educ + Gender, family = binomial, data = esteem)
+summary(esteem_glm1)
+
+esteem_glm2 <- update(esteem_glm1, ~ . - Gender)
+summary(esteem_glm2)
+
+
+```
+
+<br>
+
+
+<br>
+
+***
+
+## 21.21
+
+Predicting Quality of Spring DesertWildflower Display (Ordered Categorical Response).
+Review the description of the desert wildflower data problem in Exercise 12.21. The response for
+each desert–year combination is the subjectively rated quality of the spring wildflower display, with
+ordered response categories poor, fair, good, great, and spectacular. Use a computer routine for
+regression on ordered categorical responses (such as proportional odds logistic regression with polr
+in R or proc logistic in SAS) to fit a regression model with wildflower display quality as the ordered
+categorical response and total rainfall in the months September to March as an explanatory variable.
+
+```{r}
+#read in the data
+wildflower <- Sleuth3::ex1221
+
+#take a look at the dataset
+head(wildflower)
+
+#quick boxplot of the data 
+wildflower %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Rating, y = Total)) + 
+  theme_classic()
+
+
+#fit an ordinail logistic regression model 
+wildflower_polr <- polr(Rating ~ Total, data = wildflower, Hess = TRUE)
+summary(wildflower_polr)
+
+```
+
+<br>
+
+
+<br>
+<br>
