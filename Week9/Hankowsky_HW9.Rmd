@@ -56,7 +56,7 @@ sqrt(0.001024426)
 
 
 #or just a one sample biomial tests
-# binom.test(142,198, p = 1/2, alternative = "greater")
+binom.test(142,198, p = 1/2, alternative = "greater")
 
 
 # PRESENTATION PLOT 
