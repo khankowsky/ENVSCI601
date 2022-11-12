@@ -1,0 +1,464 @@
+---
+title: "Hankowsky_HW8"
+author: "Keith Hankowsky"
+date: '2022-10-25'
+output: html_document
+---
+
+<span style="color: magenta"> **General Comments:** You had some problems with the two basic problems, but you did exceptionally well on the two supplemental problems. **Basic score (4.5+4)/10, Supplemental Score (2.5+2.5)/5 Total score 13/10. Total HW points 130 (162.5%), 50 bonus points** </span>
+
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+library(GGally)
+library(gridExtra)
+library(olsrr)
+library(car)
+
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 13.16
+Toxic Effects of Copper and Zinc. Reconsider the data in Display 10.20 (file: ex1014). (a) Is
+the experiment a randomized block design or a completely randomized design with factorial treatment
+structure? (b) Analyze the data using two-way analysis of variance. (c) How does the analysis
+of variance compare to the regression analysis (i.e., what are the issues in deciding which analysis is
+more appropriate)?
+```{r}
+#Read-In the data
+minnow <- Sleuth3::ex1014
+
+#take a look at the dataset 
+head(minnow)
+
+#turn copper and zinc into factors 
+minnow <- minnow %>%
+  mutate(Copper = as.factor(Copper), 
+         Zinc = as.factor(Zinc))
+
+
+#look at the boxplots 
+p1 <- minnow %>%
+  ggplot() + 
+  geom_boxplot(aes(x = as.factor(Copper), y = Protein)) + 
+  labs(x = "Copper") + 
+  theme_classic()
+
+p2 <- minnow %>%
+  ggplot() + 
+  geom_boxplot(aes(x = as.factor(Zinc), y = Protein)) + 
+  labs(x = "Zinc", y = "") + 
+  theme_classic()
+
+grid.arrange(p1, p2, nrow = 1)
+
+
+#look at the interaction plot
+with(minnow, interaction.plot(Copper, Zinc, Protein))
+
+
+# REGRESSION ANALYSIS
+#running the full model 
+minnow_lm <- lm(Protein ~ Copper + Zinc, data = minnow) #when I included the interaction term it wasn't really running the subsequent code well 
+
+par(mfrow=c(2,2))
+plot(minnow_lm)
+
+summary(minnow_lm)
+anova(minnow_lm)
+
+
+
+# ANOVA ANALYSIS 
+minnow_aov <- aov(Protein ~ Copper + Zinc, data = minnow)
+
+par(mfrow=c(2,2))
+plot(minnow_aov)
+
+summary(minnow_aov)
+
+
+```
+
+The experiment is a randomized block design, because the beakers containing minnows were randomly allocated to one of the treatments, each of which constitutes a single trial. The results from the ANOVA table for analysis of variance and the regression analysis are the same. It does not matter which method is used to analyse factorial/blocked designed studies, the results will be the same. However, if the study is interested in subgroup comparisons, those may be easier in a regression format with linear combinations. 
+
+<span style="color: magenta">    </span>
+
+```{r Gallagher chunk}
+Protein_aov <- aov(Protein ~ factor(Copper) * factor(Zinc), data = ex1014)
+summary(Protein_aov)
+anova(Protein_aov)
+library(asbio)  # contains the Tukey one df additivity test: test whether can the interaction term be dropped.
+# Even with unreplicated designs, one can use the Tukey additivity test to assess whether there is an 
+# interaction between explanatory variables.
+tukey.add.test(ex1014$Protein, ex1014$Copper, ex1014$Zinc)
+#     Tukey's one df test for additivity 
+#     F = 2.1712253   Denom df = 15    p-value = 0.1612887
+
+# Given the somewhat large p, assume additivity
+# Now analyze the data as a linear model with the metals as factors
+Protein_aov_additive <- aov(Protein ~ factor(Copper) + factor(Zinc), data = ex1014)
+summary(Protein_aov_additive)
+anova(Protein_aov_additive)
+# Treat the metals as factors and analyze the data as a linear regression.
+Protein_lm <- lm(Protein ~ factor(Copper) + factor(Zinc), data=ex1014)
+anova(Protein_lm)
+
+# The two anova tables are identical
+```
+
+<br>
+<br>
+
+
+***
+
+
+## 13.18
+El Ni ˜no and Hurricanes. Reconsider the El Ni˜no and Hurricane data set from Exercise 10.28.
+(a) Regress the log of the storm index on West African wetness (treated as a categorical factor with
+2 levels) and El Ni˜no temperature (treated as a categorical factor with 3 levels); retain the sum of
+squared residuals and the residual degrees of freedom. (b) Regress the log of the storm index onWest
+African wetness (treated as categorical with 2 levels), El Ni˜no temperature (treated as numerical),
+and the square of El Ni˜no temperature. Retain the sum of squared residuals and the residual degrees
+of freedom. (c) Explain why the answers to (a) and (b) are the same. (d) Explain why a test that
+the coefficient of the temperature-squared term is zero can be used to help decide whether to treat
+temperature as numerical or categorical.
+```{r}
+#Read-In the data
+hurricane <- Sleuth3::ex1028
+
+#take a look at the dataset 
+head(hurricane)
+
+#transform the data as described in the question 
+hurricane <- hurricane %>%
+  mutate(log_stormindex = log(StormIndex), 
+         Temperature_a = as.factor(Temperature), 
+         WestAfrica_cat = as.factor(WestAfrica))
+
+
+
+# REGRESSION ANALYSIS - PART A
+#run the regression 
+hurricane_a_lm1 <- lm(log_stormindex ~ WestAfrica_cat + Temperature_a + WestAfrica_cat:Temperature_a, data = hurricane)
+
+par(mfrow=c(2,2))
+plot(hurricane_a_lm1)
+
+#refit without interaction and test for interaction effect
+hurricane_a_lm2 <- update(hurricane_a_lm1, ~ . - WestAfrica_cat:Temperature_a)
+anova(hurricane_a_lm2, hurricane_a_lm1) # no evidence for an interaction effect, p-value = 0.56
+
+
+#run optimal model, question asks for both West Africa wetness and El Nino temp to be in the model 
+hurricane_a_lm <- lm(log_stormindex ~ WestAfrica_cat + Temperature_a, data = hurricane)
+
+summary(hurricane_a_lm)
+anova(hurricane_a_lm)
+
+par(mfrow=c(2,2))
+plot(hurricane_a_lm)
+
+
+
+# REGRESSION ANALYSIS - PART B 
+hurricane_b_lm1 <- lm(log_stormindex ~ WestAfrica_cat + Temperature + WestAfrica_cat:Temperature, data = hurricane)
+
+par(mfrow=c(2,2))
+plot(hurricane_b_lm1)
+
+#refit without interaction and test for interaction effect
+hurricane_b_lm2 <- update(hurricane_b_lm1, ~ . - WestAfrica_cat:Temperature)
+anova(hurricane_b_lm2, hurricane_b_lm1) # no evidence for an interaction effect, p-value = 0.60
+
+
+#run optimal model, question asks for both West Africa wetness and El Nino temp to be in the model 
+hurricane_b_lm <- lm(log_stormindex ~ WestAfrica_cat + Temperature, data = hurricane)
+
+summary(hurricane_b_lm)
+anova(hurricane_b_lm)
+
+par(mfrow=c(2,2))
+plot(hurricane_b_lm)
+
+
+
+# PART C - Compare the SS residuals and residual df
+a1 <- anova(hurricane_a_lm)
+a2 <- anova(hurricane_b_lm)
+
+#extracting the SS residuals 
+a1["Residuals", "Sum Sq"]
+a2["Residuals", "Sum Sq"]
+
+#extracting the residual df
+a1["Residuals", "Df"]
+a2["Residuals", "Df"]
+
+
+
+
+```
+Part A: A log-transformation was conducted based problem statement in the question. A saturated model was fit to the log-transformed storm index data with West African wetness, temperature (categorical) and the interaction of West African wetness and temperature as explanatory variables. A reduced model was fit without the interaction term, and there was no evidence for an interaction effect (Extra Sum of Squares F-test, p-value = 0.56). The diagnostic plots show no problematic patterns in the model fit. 
+
+<br>
+
+Part B: A log-transformation was conducted based problem statement in the question. A saturated model was fit to the log-transformed storm index data with West African wetness, temperature (continuous) and the interaction of West African wetness and temperature as explanatory variables. A reduced model was fit without the interaction term, and there was no evidence for an interaction effect (Extra Sum of Squares F-test, p-value = 0.60). The diagnostic plots show no problematic patterns in the model fit. 
+
+<br>
+
+Part C: The sum of squared residuals and the residual degrees of freedom were slightly different in my analysis. The degrees of freedom are different for numeric and categorical variables. The degrees of freedom for a categorical variable are dependent on the number of levels in the variable, whereas thea continuous variable only has one degree of freedom. 
+
+<br>
+
+Part D: The temperature term should be treated as categorical. It has three levels (1, 0, -1). If you were to square the temperature it would essentially get rid of the information captured in that term. It would not be appropriate to treat the temperature term as continuous in this study. 
+
+<span style="color: magenta"> **Basic 13.18_3rd** I don't know quite where you went wrong on each part of the question, but you did. Part A asked for the Residual sum of squares and df, which you didn't provide. Part b asked again for the Residual ss and df, which are identical to those found in A. The answer to c) is that they are identical and asks why. Your answer to d is correct. **Score 4/5** </span>
+
+<br>
+<br>
+
+
+***
+
+# Supplemental Problems 
+## 13.17
+Dinosaur Extinctions—An Observational Study. About 65 million years ago, the dinosaurs
+suffered a mass extinction virtually overnight (in geologic time).What happened in this period, the
+Cretaceous–Tertiary (KT) boundary, that could have produced such calamity? Among many clues,
+one that all scientists regard as crucial is a layer of iridium-rich dust that was deposited over much of
+the earth at that time. Data from one of the first discoveries of this layer are shown inDisplay 13.22.
+The diagram traces iridium concentrations in soil samples taken from extensive shale and limestone
+deposits at Gubbio, Italy. Iridium (parts per trillium) is graphed against the depth at which samples
+were taken, with depth giving a crude measure of historic time.
+
+Iridium is a trace element present in most soils. But concentrations as high as those at the peak
+near 347 meters, at the KT boundary, can only occur in association with highly unusual events, such
+as volcanic eruptions or meteor impacts. So the theory is that such an event caused a massive dust
+cloud that blanketed the earth for years, killing off animals and their food sources. Butwas the cause a
+meteor (coming down on the Yucatan peninsula in central America) or volcanic eruptions (centered
+in southern China)? Two articles debating the issue appeared in the October 1990 issue of Scientific
+American—W. Alvarez and F. Asaro, “What Caused the Mass Extinction? An Extraterrestrial
+Impact,” Scientific American 263(4): 76–84, and E. Courtillot, “What Caused the Mass Extinction?
+A Volcanic Eruption,” Scientific American 263(4): 85–93. A crucial issue in the debate is the shape
+of the iridium trace because the timing and extent of the source give clues to its nature.
+
+The raw data are provided in Display 13.23. (a) Fit the two-way, saturated model to the untransformed
+data and draw a plot of the residuals versus estimated means to see if a transformation
+is suggested. (b) Fit the two-way model (after transformation if appropriate) and test for interaction,
+using a multiple regression routine. (c) If appropriate with your statistical software, repeat part
+(b) using an analysis of variance routine.
+```{r}
+#Read-In the data
+dinos <- Sleuth3::ex1317
+
+#take a look at the dataset 
+head(dinos)
+
+#transforming the data for later in the problem 
+dinos <- dinos %>%
+  mutate(log_iridium = log(Iridium))
+
+#take a look at the boxplots 
+p31 <- dinos %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Strata, y = Iridium)) + 
+  theme_classic()
+
+p32 <- dinos %>%
+  ggplot() + 
+  geom_boxplot(aes(x = DepthCat, y = Iridium)) + 
+  labs(x = "Depth Category", y = "") + 
+  theme_classic()
+
+grid.arrange(p31, p32, nrow = 1)
+
+
+
+# PART A 
+dinos_a_lm1 <- lm(Iridium ~ Strata + DepthCat + Strata:DepthCat, data = dinos)
+
+par(mfrow=c(2,2))
+plot(dinos_a_lm1)
+
+
+#refit without interaction and test for interaction effect
+dinos_a_lm2 <- update(dinos_a_lm1, ~ . - Strata:DepthCat)
+anova(dinos_a_lm2, dinos_a_lm1) # no evidence for an interaction effect, p-value = 0.43
+
+
+#run optimal model
+dinos_a_lm <- lm(Iridium ~ Strata + DepthCat, data = dinos)
+
+summary(dinos_a_lm)
+anova(dinos_a_lm)
+
+par(mfrow=c(2,2))
+plot(dinos_a_lm)
+
+
+
+
+
+# PART B 
+dinos_b_lm1 <- lm(log_iridium ~ Strata + DepthCat + Strata:DepthCat, data = dinos)
+
+par(mfrow=c(2,2))
+plot(dinos_b_lm1)
+
+
+#refit without interaction and test for interaction effect
+dinos_b_lm2 <- update(dinos_b_lm1, ~ . - Strata:DepthCat)
+anova(dinos_b_lm2, dinos_b_lm1) # no evidence for an interaction effect, p-value = 0.79
+
+
+#run optimal model
+dinos_b_lm <- lm(log_iridium ~ Strata + DepthCat, data = dinos)
+
+summary(dinos_b_lm)
+anova(dinos_b_lm)
+
+par(mfrow=c(2,2))
+plot(dinos_b_lm)
+
+
+
+
+
+# PART C 
+dinos_c_aov1 <- aov(log_iridium ~ Strata + DepthCat + Strata:DepthCat, data = dinos)
+
+par(mfrow=c(2,2))
+plot(dinos_c_aov1)
+
+
+#refit without interaction and test for interaction effect
+dinos_c_aov2 <- update(dinos_c_aov1, ~ . - Strata:DepthCat)
+anova(dinos_c_aov2, dinos_c_aov1) # no evidence for an interaction effect, p-value = 0.79
+
+
+#run optimal model
+dinos_c_aov <- aov(log_iridium ~ Strata + DepthCat, data = dinos)
+
+summary(dinos_c_aov)
+
+par(mfrow=c(2,2))
+plot(dinos_c_aov)
+
+```
+
+Part A: A regression model was fit with the raw iridium data with stratum, depth category and the interaction of stratum and depth category as explanatory variables. A reduced model was fit without the interaction term, and there was no evidence for an interaction effect (Extra Sum of Squares F-test, p-value = 0.43). However, the residuals for this model were extraordinarly large, so a log-transformation was conducted for Part B of the problem. 
+
+<br>
+
+Part B: A log-transformation was conducted based on the residual plot from Part A. A saturated model was fit to the log-transformed iridium data with stratum, depth category and the interaction of stratum and depth category as explanatory variables. A reduced model was fit without the interaction term, and there was no evidence for an interaction effect (Extra Sum of Squares F-test, p-value = 0.79). The diagnostic plots show no problematic patterns in the model fit. 
+
+<br>
+
+Part C: A saturated model was fit to the log-transformed iridium data with stratum, depth category and the interaction of stratum and depth category as explanatory variables. A reduced model was fit without the interaction term, and there was no evidence for an interaction effect (Extra Sum of Squares F-test, p-value = 0.79). The diagnostic plots show no problematic patterns in the model fit. The exact same results as the regression routine in Part B. 
+
+<span style="color: magenta"> **Supplemental 13.17_3rd** Excellent work on the problem. The residuals still had problems even after the log transform but there's not much too be done. A Box-Cox transformation might find a slightly better transform than log, but the data are just messy. **Score 2.5/2.5** </span>
+
+
+<br>
+<br>
+
+
+***
+
+
+## 13.21
+Pygmalion. The term Pygmalion effect (used in the Section 13.1.2 data problem) originated
+with the 1960s’ work of psychologist Robert Rosenthal and elementary school principal Lenore
+Jacobson, who conducted a randomized block experiment on the children in Jacobson’s elementary
+school. In each classroom (i.e., for each block of students), they assigned roughly 20% of the
+students to a “likely to excel” treatment group and the remainder to a control group. After all students
+took a standardized test at the begining of the school year, Rosenthal and Jacobson identified
+to teachers those students that had been indicated by the intelligence test as very likely to excel in
+the coming year. This was false information, though. The “likely to excel” students were simply
+those who had been assigned by a chance mechanism to the “likely to excel” treatment group. The
+researchers deceived the teachers with this false information to create artificial expectations and to
+explore the effect of those expectations on student test score gains. Display 13.26 is a partial listing
+of a data set simulated to match the summary statistics and conclusions from Table A-7 of Rosenthal
+and Jacobson’s report (R. Rosenthal, and L. Jacobson, 1968, Pygmalion in the Classroom: Teacher
+Expectation and Pupil’s Intellectual Development, Holt, Rinehart, andWinston, Inc.). Analyze the
+data to summarize the evidence that teachers’ expectations affect student test score gains. Write a
+statistical report of your conclusions.
+```{r}
+#Read-In the data
+pygmalion <- Sleuth3::ex1321
+
+#take a look at the dataset 
+head(pygmalion)
+
+
+#take a look at the boxplots 
+pygmalion %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Treatment, y = Gain)) + 
+  labs(title = "Boxplot of Student Test Score Gains vs Treatment") +
+  theme_classic()
+
+pygmalion %>%
+  ggplot() + 
+  geom_boxplot(aes(x = Class, y = Gain, color = Treatment)) + 
+  labs(title = "Boxplot of Student Test Score Gains vs Classroom") + 
+  theme_classic()
+
+#take a look at interaction plot 
+with(pygmalion, interaction.plot(Class, Treatment, Gain))
+
+
+# REGRESSION ANALYSIS
+pygmalion_lm1 <- lm(Gain ~ Treatment + Class + Treatment:Class, data = pygmalion)
+
+summary(pygmalion_lm1)
+par(mfrow=c(2,2))
+plot(pygmalion_lm1)
+
+#refit without interaction and test for interaction effect
+pygmalion_lm2 <- update(pygmalion_lm1, ~ . - Treatment:Class)
+anova(pygmalion_lm2, pygmalion_lm1) # no evidence for an interaction effect, p-value = 0.11
+
+#refit without class and test for class effect 
+pygmalion_lm3 <- update(pygmalion_lm2, ~ . - Class)
+anova(pygmalion_lm3, pygmalion_lm2) # strong evidence for a class effect, p-value < 0.0001
+
+
+#run optimal model
+pygmalion_lm <- lm(Gain ~ Treatment + Class, data = pygmalion)
+
+summary(pygmalion_lm)
+anova(pygmalion_lm)
+
+par(mfrow=c(2,2))
+plot(pygmalion_lm)
+
+confint(pygmalion_lm)
+
+
+#randomization distribution 
+obs = summary(lm(Gain ~ Treatment + Class, data = pygmalion))$coefficients["Treatmentpygmalion", "t value"]
+
+nulldist = do(15000) * summary(lm(Gain ~ shuffle(Treatment) + shuffle(Class), data = pygmalion))$coefficients["shuffle(Treatment)pygmalion", "t value"]
+
+histogram(~result, groups = result >= obs, v = obs, data = nulldist)
+tally(~result >= obs, format = "proportion", data = nulldist)
+
+```
+
+The Pygmalion treatments adds an estimated 3.61 points to a students test score (95% confidence interval: 0.147 to 12.90 points). The study provides moderate evidence that the effect is real (one-sided p-value = 0.021). 
+
+<span style="color: magenta"> **Supplemental 13.21_3rd** Excellent work. I couldn't find any problems at all.  **Score 2.5/2.5** </span>
+
+<br>
+<br>
+
+

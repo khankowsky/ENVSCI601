@@ -1,0 +1,286 @@
+---
+title: "Hankowsky_HW9"
+output: html_document
+date: "2022-11-03"
+---
+
+<span style="color: magenta"> **General Comments:** Excellent work on all 4 problems! I have virtually no comments that would improve your work. **Basic score (5+5)/10, Supplemental Score (2.5+2.5)/5  Total score 15/10, Total Points: 145, Average (9 Homeworks): 161%,  Surplus: 65 points** </span>
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+library(GGally)
+library(gridExtra)
+library(olsrr)
+library(car)
+library(Hmisc)
+
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 18.10
+
+```{r}
+#create the table
+polio <- matrix(c(142,199858,56,199944), nrow = 2, ncol = 2, byrow = TRUE,
+                  dimnames = list(c("Placebo", "Salk Polio Vaccine"),c("Yes", "No")))
+
+#look at the table
+polio
+
+# Part A 
+fisher.test(polio, alternative="greater") # Fisher's exact test, 1-tailed
+
+
+# Part B 
+# Sampling distribution of a single population proportion 
+#sample proportion 
+142/198
+
+#estimate the varinace of the sample population 
+((142/198)*(1 - (142/198))) / (198)
+
+#find the SE
+sqrt(0.001024426)
+
+#95% CI using normal multiplier 
+0.7171717 + 0.03200666
+0.7171717 - 0.03200666
+
+#check endpoints for sample size requirements 
+198*0.7491784
+198*0.685165
+
+
+#or just a one sample biomial tests
+binom.test(142,198, p = 1/2, alternative = "greater")
+
+
+# PRESENTATION PLOT 
+#just looking at the data matrix
+polio
+
+#proportion tests
+prop.test(142, (142+199858)) #Est = 0.00071; CI = 0.0006001657 to 0.0008394233
+prop.test(56, (142+199944)) #Est = 0.0002798797; CI = 0.0002133819 to 0.0003662140
+
+#saving the estimates and CIs from the prop tests
+pHat   <- c(0.00071, 0.0002798797)       
+lower95 <- c(0.0006001657, 0.0002133819)
+upper95 <- c(0.0008394233, 0.0003662140)
+
+polio_plot <- Cbind(pHat, lower95, upper95)
+
+Treatment <- as.factor( c("Placebo", "Salk Polio Vaccine"))
+
+#the plot 
+Dotplot(Treatment ~ polio_plot, 
+        xlab = "Probability of Infantile Paralysis Based on Treatment (and 95% Confidence Intervals)", 
+        ylab = "Treatment", ylim=c(.5,2.5), cex=2)
+
+```
+
+<br>
+
+These results provide overwhelming evidence that the odds of infantile paralysis are lower for those who received the Salk vaccine (one-sided p-value < 0.0001). The odds of infantile paralysis are 2.54 times greater for the placebo treatment than the Salk vaccine (95% CI: 1.94 to $\infty$). Yes, the observed proportion in the control group is drastically larger than would be excepted under the null hypothesis (one-sided p-value < 0.0001). 
+
+<span style="color: magenta"> **Basic 18.10** Superb work throughout. Chapter 18 hadn't yet introduced the Fisher test, but the Fisher test odds ratio (two tailed) will give you an estimate for the upper CI that isn't infinity **score 5/5** </span>
+
+<br>
+
+***
+
+## 19.23
+```{r}
+#Read-In the data
+birds <- Sleuth3::ex1923
+
+birds <- birds %>%
+  mutate(expected_n = (N/9866)*414) %>%
+  mutate(expected_n2 = (N/sum(N))*sum(n)) %>%  #just making sure the calculation given by the textbook is the same as that given by prof Gallagher; it is 
+  mutate(x = ((n-expected_n)^2)/expected_n) 
+
+#just sorting the expected values
+birds %>%
+  arrange(expected_n)
+
+#sum the expected values
+chi2 <- sum(birds$x) 
+  
+#calculating the p-value for the chi-squared statistic with 28df, using 1-pchisq to get the area to the right of the curve
+1-pchisq(chi2, 28)
+
+
+```
+
+<br>
+
+This data provides overwhelming evidence that the selection of birds was not random (p-value < 0.00001). Thus, the selection of bird species is most likely based on the information that was available which could result in biased sampling and incorrect conclusions. 
+
+<span style="color: magenta"> **Basic 19.23** Excellent work. You should never report a p value of 0 or 1. In my calcualtion of the chi2 it was pchisq(sum(birds$Chi2), df=28, lower.tail=FALSE), [1] 4.121023e-96 But, you can't report that either since machine precision for 0 is only 2e-16. Just report p<1e-6 **score 5/5** </span>
+
+<br>
+
+***
+
+# Supplemental Problems 
+## 18.19
+
+```{r}
+#create the tables 
+arrests <- matrix(c(28, 35, 36, 20), nrow = 2, ncol = 2, byrow = TRUE,
+                  dimnames = list(c("No Preschool", "Preschool"),c("No", "Yes")))
+
+income <- matrix(c(38, 25, 22, 34), nrow = 2, ncol = 2, byrow = TRUE,
+                  dimnames = list(c("No Preschool", "Preschool"),c("No", "Yes")))
+
+#look at the tables
+arrests
+
+income
+
+
+#run the fishers test for arrests
+fisher.test(arrests)
+
+#take the inverse of the odds ratio to interpret it 
+1/0.4475579 
+#CIs
+1/0.1983322 
+1/0.9898925
+
+#run the fishers test for income
+fisher.test(income)
+
+
+
+# PRESENTATION PLOT  for arrests
+#just looking at the data matrix
+arrests
+
+#proportion tests
+prop.test(35, (35+28)) #Est = 0.5555556  ; CI = 0.4255300   to 0.6787945
+prop.test(20, (20+36)) #Est = 0.3571429  ; CI = 0.2368611   to 0.4970247
+
+#saving the estimates and CIs from the prop tests
+pHat   <- c(0.5555556 , 0.3571429)       
+lower95 <- c(0.4255300 , 0.2368611)
+upper95 <- c(0.6787945, 0.4970247)
+
+arrests_plot <- Cbind(pHat, lower95, upper95)
+
+#getting the matrix into the correct format
+Treatment <- as.factor(c("No Preschool", "Preschool"))
+
+#the plot 
+p1 <- Dotplot(Treatment ~ arrests_plot, 
+        xlab = "Probability of Getting Arrested 5 or More Times \n Based on Preschool Program (and 95% Confidence Intervals)", 
+        ylab = "Treatment", ylim=c(.5,2.5), cex=2)
+
+
+
+
+# PRESENTATION PLOT  for income
+#just looking at the data matrix
+income
+
+#proportion tests
+prop.test(25, (25+38)) #Est = 0.3968254   ; CI = 0.2782316   to 0.5280338
+prop.test(34, (34+22)) #Est = 0.6071429   ; CI = 0.4675350    to 0.7320673
+
+#saving the estimates and CIs from the prop tests
+pHat   <- c(0.3968254 , 0.6071429)       
+lower95 <- c(0.2782316 , 0.4675350)
+upper95 <- c(0.5280338, 0.7320673)
+
+arrests_plot2 <- Cbind(pHat, lower95, upper95)
+
+#getting the matrix into the correct format
+Treatment <- as.factor(c("No Preschool", "Preschool"))
+
+#the plot 
+p2 <- Dotplot(Treatment ~ arrests_plot2, 
+        xlab = "Probability of Earning an Annual Income of $20K or More \n Based on Preschool Program (and 95% Confidence Intervals)", 
+        ylab = "Treatment", ylim=c(.5,2.5), cex=2)
+
+grid.arrange(p1, p2, ncol = 1)
+
+```
+
+<br>
+
+These results provide moderate evidence that the odds of having 5 arrests or more are lower for those who participated in high-quality preschool programs (one-sided p-value = 0.042). The odds of having 5 arrests or more are 2.23 times less for participants in the high-quality preschool programs (95% CI: 1.01 to 5.04). These results provide solid evidence that the odds of having an annual income of $20K or more are greater for those who participated in high-quality preschool programs (one-sided p-value = 0.029). The odds of having an annual income 20K or more are 2.33 times greater for the participants in the high-quality preschool programs (95% CI: 1.06 to 5.24).
+
+<span style="color: magenta"> **Supplemental 18.19** Excellent analyses throughout and very nice graphics. **score 2.5/2.5** </span>
+
+<br>
+
+***
+
+## 19.20
+
+```{r}
+#create the table
+diet <- matrix(c(1, 44, 49, 228), nrow = 2, ncol = 2, byrow = TRUE,
+                  dimnames = list(c("Women", "Men"),c("Dropped Out", "Completed")))
+
+#look at the table
+diet
+
+#run the fishers test
+fisher.test(diet)
+
+#to get the odds ratio interpretative 
+1/0.1061466 
+
+#and the CIs 
+1/0.002571065 
+1/0.656355519
+
+
+# PRESENTATION PLOT 
+#just looking at the data matrix
+diet
+
+#proportion tests
+prop.test(1, (1+44)) #Est = 0.02222222 ; CI = 0.001161097  to 0.132339248
+prop.test(49, (49+228)) #Est = 0.1768953 ; CI = 0.1348649  to 0.2281157
+
+#saving the estimates and CIs from the prop tests
+pHat   <- c(0.02222222 , 0.1768953)       
+lower95 <- c(0.001161097 , 0.1348649 )
+upper95 <- c(0.132339248, 0.2281157)
+
+diet_plot <- Cbind(pHat, lower95, upper95)
+
+Gender <- as.factor( c("Women", "Men"))
+
+#the plot 
+Dotplot(Gender ~ diet_plot, 
+        xlab = "Probability of Dropping out of the Diet Study (and 95% Confidence Intervals)", 
+        ylab = "Treatment", ylim=c(.5,2.5), cex=2)
+
+```
+
+<br>
+
+These data provide strong evidence that women were more likely to complete the diet study (p-value < 0.0063). The odds of completing the diet study were 9.42 times greater for woman than men (95% CI: 1.52 to 388.94). 
+
+**Supplemental 19.20 I** Excellent throughout. You can get the odds ratios greater than 1 by just flipping a single row or column (not both) as shown in the following code chunk **Score 2.5/2.5** </span>
+
+```{r Gallagher chunk}
+myTable3 <- matrix(c(44,45-44,277-49,49), nrow = 2, ncol = 2, byrow = TRUE,
+                   dimnames = list(c("Women", "Men"),
+                                   c("Stayed", "Dropped")))
+myTable3
+fisher.test(myTable3)
+fisher.test(myTable3, alternative="greater")
+```
+
+<br>
+<br>

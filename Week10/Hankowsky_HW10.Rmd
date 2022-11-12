@@ -23,22 +23,6 @@ Hankowsky Homework Solutions
 
 # Basic Problems 
 ## 20.16
-
-Bumpus Natural Selection Data. Hermon Bumpus analyzed various characteristics of some
-house sparrows that were found on the ground after a severe winter storm in 1898. Some of the
-sparrows survived and some perished. The data on male sparrows in Display 20.17 are survival
-status (1 D survived, 2 D perished), age (1 D adult, 2 D juvenile), the length from tip of beak to tip
-of tail (in mm), the alar extent (length from tip to tip of the extended wings, in mm), the weight in
-grams, the length of the head in mm, the length of the humerus (arm bone, in inches), the length of
-the femur (thigh bones, in inches), the length of the tibio-tarsus (leg bone, in inches), the breadth of
-the skull in inches, and the length of the sternum in inches. (A subset of this data was discussed in
-Exercise 2.21.)
-Analyze the data to see whether the probability of survival is associated with physical characteristics
-of the birds. This would be consistent, according to Bumpus, with the theory of natural
-selection: those that survived did so because of some superior physical traits. Realize that (i) the
-sampling is from a population of grounded sparrows, and (ii) physical measurements and survival
-are both random. (Thus, either could be treated as the response variable.)
-
 ```{r}
 #read in the data
 sparrows <- Sleuth3::ex2016
@@ -51,7 +35,7 @@ ggpairs(sparrows, columns = 2:11, ggplot2::aes(color = Status))
 
 
 #run the model 
-#reorder
+#change to factor 
 sparrows <- sparrows %>%
   mutate(AG = as.factor(AG))
 
@@ -86,32 +70,29 @@ summary(sparrow_glm5)
 sparrow_glm6 <- update(sparrow_glm5, ~ . - BH)
 summary(sparrow_glm6)
 
+#run the optimal model 
+sparrow_glm_optimal <- glm(Status ~ TL + WT + HL + KL, family = binomial, data = sparrows)
+summary(sparrow_glm_optimal)
 
+#run the null model 
+sparrow_glm_null <- glm(Status ~ 1, family = binomial, data = sparrows)
+summary(sparrow_glm_null)
+
+#drop in deviance 
+anova(sparrow_glm_optimal, sparrow_glm_null, test = "Chisq")
 
 ```
 
 <br>
 
+These data provide overwhelming evidence that the probability of survival is associated with the physical characteristics
+of the birds (Drop-in-Deviance Test, p-value < 0.00001). The physical characteristics of the birds that are most associated with the probability of survival are the total length from the tip of the beak to the tip of the tail in millimeters (p-value < 0.00001), weight in grams (p-value = 0.011), length of humerus in inches (p-value < 0.001), and the length of the keel of the sternum in inches (p-value = 0.020). 
 
 <br>
 
 ***
 
 ## 21.18
-
-HIV and Circumcision. Researchers in Kenya identified a cohort of more than 1,000 prostitutes
-who were known to be a major reservoir of sexually transmitted diseases in 1985. It was
-determined that more than 85% of them were infected with human immunodeficiency virus (HIV)
-in February 1986. The researchers then identified men who acquired a sexually transmitted disease
-from this group of women after the men sought treatment at a free clinic. Display 21.22 shows the
-subset of those men who did not test positive for the HIV on their first visit and who agreed to participate
-in the study. The men are categorized according to whether they later tested positive for HIV
-during the study period, whether they had one or multiple sexual contacts with the prostitutes, and
-whether they were circumcised. Describe how the odds of testing positive are associated with number
-of contacts and with whether the male was circumcised. (Data from D. W. Cameron et al., “Female
-to Male Transmission of Human Immunodeficiency Virus Type 1: Risk Factors for Seroconversion
-in Men,” The Lancet (1989): 403–07.)
-
 ```{r}
 #read in the data
 HIV <- Sleuth3::ex2118
@@ -119,14 +100,23 @@ HIV <- Sleuth3::ex2118
 #take a look at the dataset
 head(HIV)
 
+#create variables of interest 
+Response1 <- cbind(ex2118$HIV, ex2118$Number-ex2118$HIV)
+Circ <- ifelse(ex2118$Circumcised == "No", 1, 0)
+Contact_S <- ifelse(ex2118$Contact == "Multiple", 1, 0)
 
+#run glm 
+HIV_glm <- glm(Response1 ~ Circ + Contact_S, family = binomial)
 
-
+#get the odds ratio from the glm summary and back transform the odds ratio
+summary(HIV_glm)
+exp(cbind(OR = coef(HIV_glm), confint(HIV_glm)))
 
 ```
 
 <br>
 
+The odds of testing positive for HIV for people who were not circumcised was estimated to be 10.74 times the odds of people who were circumcised after controlling for the number of sexual contacts with prostitutes (95% CI: 4.25 to 31.01 times). The odds for testing positive for HIV for people who had multiple sexual contacts with prostitutes was estimated to be 1.45 times the odds of people who had a single sexual contact with a prostitute after controlling for the circumcision status (95% CI: 0.55 to 4.35 times). 
 
 <br>
 
@@ -134,17 +124,6 @@ head(HIV)
 
 # Supplemental Problems 
 ## 20.20
-
-Factors Associated with Self-Esteem. Reconsider the NLSY79 data in Exercise 12.23. The
-variable Esteem1 is the respondent’s degree of agreement in 2006 with the statement “I feel that I’m
-a person of worth, at least on equal basis with others,” with values of 1, 2, 3, and 4 signifying strong
-agreement, agreement, disagreement, or strong disagreement, respectively. Construct a new binary
-response variable from this, which takes on the value 1 for strong agreement and 0 for agreement,
-disagreement, or strong disagreement. Explore the dependence of the probability that a person has
-positive self-esteem (as indicated by a response of strong agreement on Esteem1) on these explanatory
-variables: log annual income in 2005 (Income2005), intelligence as measured by the AFQT
-score in 1981 (AFQT), years of education (Educ), and gender (Gender).
-
 ```{r}
 #read in the data
 esteem <- Sleuth3::ex1223
@@ -154,7 +133,7 @@ head(esteem)
 
 #construct variables as illustrated in the problem 
 esteem <- esteem %>%
-  select(Income2005, AFQT, Educ, Gender, Esteem1) %>%
+  dplyr::select(Income2005, AFQT, Educ, Gender, Esteem1) %>%
   mutate(response_var = case_when(
     Esteem1 == 1 ~ 1, 
     Esteem1 %in% c(2,3,4) ~ 0)) %>%
@@ -170,10 +149,8 @@ head(esteem)
 ggpairs(esteem, columns = 3:5, ggplot2::aes(color = response_var))
 
 
-
 #run the full model 
 esteem_glm <- glm(response_var ~ log_income + AFQT + Educ + Gender, family = binomial, data = esteem)
-
 crPlots(esteem_glm)
 
 
@@ -185,24 +162,24 @@ esteem_glm2 <- update(esteem_glm1, ~ . - Gender)
 summary(esteem_glm2)
 
 
+#run the optimal model 
+esteem_glm_optimal <- glm(response_var ~ log_income + AFQT + Educ, family = binomial, data = esteem)
+summary(esteem_glm_optimal)
+
+#back transform the estimates and CIs 
+exp(cbind(OR = coef(esteem_glm_optimal), confint(esteem_glm_optimal)))
+
 ```
 
 <br>
 
+There is a 14.92% increase in the odds of having a positive self-esteem for every 10 fold increase in 2005 income, after controlling for AFQT score and years of education (95% CI: 5.38% to 25.36%). There is a 8.38% increase in the odds of having a positive self-esteem for every additional year of education, after controlling for income and AFQT score (95% CI: 4.04% to 12.93%). There is 1% increase in the odds of having a positive self-esteem for every one-unit increase in AFQT score, after controlling for income and years of education (95% CI: 0.04% to 1.1%)
 
 <br>
 
 ***
 
 ## 21.21
-
-Predicting Quality of Spring DesertWildflower Display (Ordered Categorical Response).
-Review the description of the desert wildflower data problem in Exercise 12.21. The response for
-each desert–year combination is the subjectively rated quality of the spring wildflower display, with
-ordered response categories poor, fair, good, great, and spectacular. Use a computer routine for
-regression on ordered categorical responses (such as proportional odds logistic regression with polr
-in R or proc logistic in SAS) to fit a regression model with wildflower display quality as the ordered
-categorical response and total rainfall in the months September to March as an explanatory variable.
 
 ```{r}
 #read in the data
@@ -214,18 +191,24 @@ head(wildflower)
 #quick boxplot of the data 
 wildflower %>%
   ggplot() + 
-  geom_boxplot(aes(x = Rating, y = Total)) + 
+  geom_boxplot(aes(x = reorder(Rating, Total), y = Total)) + 
+  labs(x = "Rating") + 
   theme_classic()
 
-
 #fit an ordinail logistic regression model 
-wildflower_polr <- polr(Rating ~ Total, data = wildflower, Hess = TRUE)
+wildflower_polr <- polr(Rating ~ Total, data = wildflower)
 summary(wildflower_polr)
+
+
+#back transform the estimate 
+exp(coef(wildflower_polr)) 
+exp(confint(wildflower_polr))
 
 ```
 
 <br>
 
+For each unit increase in total rainfall in the months September to March, the wildflower display rating is only 79.82% as likely to increase rating status (95% CI: 71.76% to 88.15%)
 
 <br>
 <br>
