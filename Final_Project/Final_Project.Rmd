@@ -1,0 +1,39 @@
+---
+title: "Final_Project"
+output: html_document
+date: "2022-11-14"
+---
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(skimr)
+library(data.table)
+library(fuzzyjoin)
+library(lubridate)
+library(kableExtra)
+library(modEvA)
+library(GGally)
+
+library(maps) # land masses
+library(rgdal) # read OGR vector maps into Spatial objects
+library(viridis) # for customizing scale bars
+library(mapproj)
+library(hexbin)
+library(sf)
+library(scales)
+library(gridExtra)
+library(openxlsx)
+library(beepr)
+library(purrr)
+library(rsq)
+```
+
+# Read- In the Data
+```{r}
+paired_tows_1mi_24hr <- read.csv('./data/paired_tows_1mi_24hr.csv')
+paired_tows_5mi_72hr <- read.csv('./data/paired_tows_5mi_72hr.csv')
+```
+
+
