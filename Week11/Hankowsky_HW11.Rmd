@@ -107,14 +107,64 @@ cancer <- Sleuth3::ex2220
 head(cancer)
 
 #create the variables as dictated in the question 
-cancer %>% 
-  mutate()
+cancer <- cancer %>% 
+  mutate(exposuresquared = Exposure^2,
+         time = case_when(
+           YearsAfter == "0to7" ~ 3.5, 
+           YearsAfter == "8to11" ~ 9.5, 
+           YearsAfter == "12to15" ~ 13.5, 
+           YearsAfter == "16to19" ~ 17.5,            
+           YearsAfter == "20to23" ~ 21.5,            
+           YearsAfter == "24to27" ~ 25.5, 
+           YearsAfter == "28to31" ~ 29.5, 
+         ), 
+         log_time = log(time))
 
+
+# PART A
+cancer_glm_a <- glm(Deaths ~ YearsAfter + Exposure + exposuresquared + offset(log(AtRisk)), family = poisson, data = cancer)
+summary(cancer_glm_a)
+
+#deviance goodness-of-fit test
+1-pchisq(cancer_glm_a$deviance, df = cancer_glm_a$df.residual)
+
+
+# PART B 
+cancer_glm_b <- glm(Deaths ~ log_time + Exposure + exposuresquared + offset(log(AtRisk)), family = poisson, data = cancer)
+summary(cancer_glm_b)
+
+
+# PART C 
+cancer_glm_c <- glm(Deaths ~ log_time + Exposure + exposuresquared + log_time:Exposure +  offset(log(AtRisk)), family = poisson, data = cancer)
+summary(cancer_glm_c)
+
+
+# PART D
+cancer_glm_d1 <- glm(Deaths ~ YearsAfter + Exposure + exposuresquared + offset(log(AtRisk)), family = poisson, data = cancer)
+summary(cancer_glm_d1)
+
+cancer_glm_d2 <- update(cancer_glm_d1, ~ . - exposuresquared)
+summary(cancer_glm_d2)
+
+
+#run the optimal model 
+cancer_glm_optimal <- glm(Deaths ~ YearsAfter + Exposure + offset(log(AtRisk)), family = poisson, data = cancer)
+summary(cancer_glm_optimal)
+
+#back transform the estimates 
+exp(cbind(OR = coef(cancer_glm_optimal), confint(cancer_glm_optimal)))
 
 ```
 
 <br>
 
+Part A: There does seem to be extra-Poisson variation present. The residual deviance is greater than the residual degrees of freedom. A deviance goodness-of-fit test shows inconclusive evidence for extra-Poisson variation (p-value = 0.057). The rads-squared [Exposure-Squared] term is not necessary (p-value = 0.064). 
+
+Part B: The deviance is substantially larger in this model. The deviance in this model was 73.68 on 38 degrees of freedom versus 46.69 on 33 degrees of freedom. 
+
+Part C: The is no evidence for an effect of the interaction of log(time):Exposure (p-value = 0.28). 
+
+Part D: Associated with each 1 level increase in exposure level, there is a 0.2% increase in the cancer deaths per person per year (95% CI: 0.009% to 0.26%). 
 
 <br>
 
@@ -150,14 +200,17 @@ ggpairs(islands, columns = (9:12))
 
 
 # PART A
-island_glm_a <- glm(Native ~ log_area + log_elevation + log_distnear + log_areanear, family = poisson, data = islands)
-summary(island_glm_a)
+# island_glm_a <- glm(Native ~ log_area + log_elevation + log_distnear + log_areanear, family = poisson, data = islands)
+# summary(island_glm_a)
+
+island_glm_a1 <- glm(Native ~ Area + Elev + DistNear + AreaNear, family = quasipoisson, data = islands)
+summary(island_glm_a1)
 
 #deviance goodness-of-fit test
-1-pchisq(island_glm_a$deviance, df = island_glm_a$df.residual)
+1-pchisq(island_glm_a1$deviance, df = island_glm_a1$df.residual)
 
 #plot of deviance residuals against the fitted means
-gf_point(residuals(island_glm_a, type = "deviance") ~ fitted(island_glm_a)) %>%
+gf_point(residuals(island_glm_a1, type = "deviance") ~ fitted(island_glm_a1)) %>%
   gf_hline(yintercept = 0, color = "blue") %>%
   gf_hline(yintercept = 2, color = "gray60", linetype = 2) %>%
   gf_hline(yintercept = -2, color = "gray60", linetype = 2) %>%
@@ -179,14 +232,32 @@ summary(island_glm_b3)
 island_glm_optimal <- glm(Native ~ log_area + log_areanear, family = quasipoisson, data = islands)
 summary(island_glm_optimal)
 
-#back transform the estimates 
+#back transform the estimates
 exp(cbind(OR = coef(island_glm_optimal), confint(island_glm_optimal)))
+
+
+
+
+# island_glm_b1 <- glm(Native ~ Area + Elev + DistNear + AreaNear, family = quasipoisson, data = islands)
+# summary(island_glm_b1)
+# 
+# island_glm_b2 <- update(island_glm_b1, ~ . - DistNear)
+# summary(island_glm_b2)
+# 
+# 
+# #run the optimal model 
+# island_glm_optimal <- glm(Native ~ Area + Elev + AreaNear, family = quasipoisson, data = islands)
+# summary(island_glm_optimal)
+# 
+# #back transform the estimates 
+# exp(cbind(OR = coef(island_glm_optimal), confint(island_glm_optimal)))
+
 
 ```
 
 <br>
 
-The deviance goodness of fit test provides very strong evidence that there is extra-Poisson variation (p-value < 0.0001). The plot of deviance residuals against the fitted means confirms that it is not a result of one or two outliers, rather it seems that the variability in the response exceeds that which is allowed for by the Poisson log-linear model. Thus, Part B was conducted using quasi-likelihood methods. The backwards regression analysis found no evidence for an effect of log[Elevation] (p-value = 0.67) or log[Distance to the Nearest Island] (p-value = 0.13). 
+The deviance goodness of fit test provides very strong evidence that there is extra-Poisson variation (p-value < 0.0001). The plot of deviance residuals against the fitted means confirms that it is not a result of one or two outliers, rather it seems that the variability in the response exceeds that which is allowed for by the Poisson log-linear model. Thus, Part B was conducted using quasi-likelihood methods. The backwards regression analysis found no evidence for an effect of Distance to the Nearest Island (p-value = 0.68). 
 
 <br>
 
@@ -214,17 +285,47 @@ valves <- Sleuth3::ex2224
 #take a look at the data
 head(valves)
 
+#turn all the variable of interest into factors
+valves1 <- valves %>%
+  mutate(System = as.factor(System), 
+         Operator = as.factor(Operator), 
+         Valve = as.factor(Valve), 
+         Size = as.factor(Size), 
+         Mode = as.factor(Mode))
+
 #scatterplot matrix of all the variables of interest 
 ggpairs(valves, columns = (1:5))
 
 
-# REGRESSION ANALYSIS USING BACKWARD ELIMINATION
-values_glm1 <- glm(Failures ~ System + Operator + Valve + Size + Mode, family = poisson, data = valves)
+# # REGRESSION ANALYSIS USING BACKWARD ELIMINATION - wrong analysis 
+# valves_glm1 <- glm(Failures ~ System + Operator + Valve + Size + Mode + offset(log(Time)), family = poisson, data = valves)
+# summary(valves_glm1)
+# 
+# valves_glm2 <- update(valves_glm1, ~ . - Mode)
+# summary(valves_glm2)
+# 
+# valves_glm3 <- update(valves_glm2, ~ . - System)
+# summary(valves_glm3)
+# 
+# 
+# #run the optimal model 
+# valves_glm_optimal <- glm(Failures ~  Operator + Valve + Size + offset(log(Time)), family = poisson, data = valves)
+# summary(valves_glm_optimal)
+# 
+# #back transform the estimates 
+# exp(cbind(OR = coef(valves_glm_optimal), confint(valves_glm_optimal)))
+
+
+
+#Running the full model with the variables as factors
+valves_glm1 <- glm(Failures ~ System + Operator + Valve + Size + Mode + offset(log(Time)), family = poisson, data = valves1)
+summary(valves_glm1)
 
 ```
 
 <br>
 
+The factors associated with large numbers of valve failures are System type 1 - containment (p-value < 0.0001), 3 - power conversion (p-value = 0.043), and 4 - safety (p-value = 0.027); Operator 1 - air (p-value < 0.0001), 3 - motor-driven (p-value < 0.0001), and 4 - manual (p-value < 0.0001); Valve type 1 - ball (p-value < 0.0001), 4 - gate (p-value < 0.0001), and 5 - globe (p-value = 0.0033); Size 1 - less than 2 inches (p-value < 0.0001) and 3 - 10–30 inches p-value < 0.0001(); and Mode 1 - normally closed (p-value < 0.0001). 
 
 <br>
 
