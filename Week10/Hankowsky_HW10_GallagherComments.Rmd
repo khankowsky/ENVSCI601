@@ -1,0 +1,248 @@
+---
+title: "Hankowsky_HW10"
+output: html_document
+date: "2022-11-10"
+---
+
+<span style="color: magenta"> **General Comments:** Excellent work on the basic problems. **Basic score (5+5)/10, Supplemental Score (2.5+2.5)/5 Total score 15/10 Total Points (10 HW): , Average: , Surplus: ** </span>
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+library(GGally)
+library(gridExtra)
+library(olsrr)
+library(car)
+library(Hmisc)
+library(MASS)
+
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 20.16
+```{r}
+#read in the data
+sparrows <- Sleuth3::ex2016
+
+#take a look at the dataset 
+head(sparrows)
+
+#scatterplot matrix
+ggpairs(sparrows, columns = 2:11, ggplot2::aes(color = Status))
+
+
+#run the model 
+#change to factor 
+sparrows <- sparrows %>%
+  mutate(AG = as.factor(AG))
+
+sparrow_glm <- glm(Status ~ AG + TL + WT + BH + HL + FL + TT + SK + KL, family = binomial, data = sparrows)
+
+crPlots(sparrow_glm)
+
+#looks like there an effect of TL, WT, HL, and maybe a slight KL 
+#after accounting for other variables
+
+# REGRESSION ANALYSIS USING BACKWARD ELIMINATION
+sparrow_glm1 <- glm(Status ~ AG + TL + WT + BH + HL + FL + TT + SK + KL, family = binomial, data = sparrows)
+summary(sparrow_glm1)
+
+
+sparrow_glm2 <- update(sparrow_glm1, ~ . - AG)
+summary(sparrow_glm2)
+
+
+sparrow_glm3 <- update(sparrow_glm2, ~ . - FL)
+summary(sparrow_glm3)
+
+
+sparrow_glm4 <- update(sparrow_glm3, ~ . - TT)
+summary(sparrow_glm4)
+
+
+sparrow_glm5 <- update(sparrow_glm4, ~ . - SK)
+summary(sparrow_glm5)
+
+
+sparrow_glm6 <- update(sparrow_glm5, ~ . - BH)
+summary(sparrow_glm6)
+
+#run the optimal model 
+sparrow_glm_optimal <- glm(Status ~ TL + WT + HL + KL, family = binomial, data = sparrows)
+summary(sparrow_glm_optimal)
+
+#run the null model 
+sparrow_glm_null <- glm(Status ~ 1, family = binomial, data = sparrows)
+summary(sparrow_glm_null)
+
+#drop in deviance 
+anova(sparrow_glm_optimal, sparrow_glm_null, test = "Chisq")
+
+```
+
+<br>
+
+These data provide overwhelming evidence that the probability of survival is associated with the physical characteristics
+of the birds (Drop-in-Deviance Test, p-value < 0.00001). The physical characteristics of the birds that are most associated with the probability of survival are the total length from the tip of the beak to the tip of the tail in millimeters (p-value < 0.00001), weight in grams (p-value = 0.011), length of humerus in inches (p-value < 0.001), and the length of the keel of the sternum in inches (p-value = 0.020). 
+
+<br>
+<span style="color: magenta"> **Basic 20.16_3rd** Excellent work. You used a backward selection procedure to arrive at 4 key variables. If you check the VIFs, you'll find that with the full set of variables, many of the variables had VIFs greater than 4 indicating problems with multicollinearity. There are a variety of solutions that have been proposed: PC regression, Ridge regression, lasso, but the latest is to use Bayesian model averaging with Bayesian Information Content BIC as a criterion. I'll present that tonight, and you end up with the same 4 variables that you found: TL + WT + HL + KL **Score 5/5** </span>
+
+***
+
+## 21.18
+```{r}
+#read in the data
+HIV <- Sleuth3::ex2118
+
+#take a look at the dataset
+head(HIV)
+
+#create variables of interest 
+Response1 <- cbind(ex2118$HIV, ex2118$Number-ex2118$HIV)
+Circ <- ifelse(ex2118$Circumcised == "No", 1, 0)
+Contact_S <- ifelse(ex2118$Contact == "Multiple", 1, 0)
+
+#run glm 
+HIV_glm <- glm(Response1 ~ Circ + Contact_S, family = binomial)
+
+#get the odds ratio from the glm summary and back transform the odds ratio
+summary(HIV_glm)
+exp(cbind(OR = coef(HIV_glm), confint(HIV_glm)))
+
+```
+
+<br>
+
+The odds of testing positive for HIV for people who were not circumcised was estimated to be 10.74 times the odds of people who were circumcised after controlling for the number of sexual contacts with prostitutes (95% CI: 4.25 to 31.01 times). The odds for testing positive for HIV for people who had multiple sexual contacts with prostitutes was estimated to be 1.45 times the odds of people who had a single sexual contact with a prostitute after controlling for the circumcision status (95% CI: 0.55 to 4.35 times). 
+
+<span style="color: magenta"> **Basic 21.18_3rd** Excellent answer, but you should have noted that the evidence for an effect of multiple partners is weak (p = .48 ) and 95% CI which includes 1  **Score 5/5** </span>
+
+
+<br>
+
+***
+
+# Supplemental Problems 
+## 20.20
+```{r}
+#read in the data
+esteem <- Sleuth3::ex1223
+
+#take a look at the dataset
+head(esteem)
+
+#construct variables as illustrated in the problem 
+esteem <- esteem %>%
+  dplyr::select(Income2005, AFQT, Educ, Gender, Esteem1) %>%
+  mutate(response_var = case_when(
+    Esteem1 == 1 ~ 1, 
+    Esteem1 %in% c(2,3,4) ~ 0)) %>%
+  mutate(response_var = as.factor(response_var), 
+         log_income = log(Income2005)) %>%
+  relocate(response_var) %>%
+  relocate(log_income, .after = Income2005)
+
+#take a look at the new dataset
+head(esteem)
+
+#scatterplot matrix
+ggpairs(esteem, columns = 3:5, ggplot2::aes(color = response_var))
+
+
+#run the full model 
+esteem_glm <- glm(response_var ~ log_income + AFQT + Educ + Gender, family = binomial, data = esteem)
+crPlots(esteem_glm)
+
+
+# REGRESSION ANALYSIS USING BACKWARD ELIMINATION
+esteem_glm1 <- glm(response_var ~ log_income + AFQT + Educ + Gender, family = binomial, data = esteem)
+summary(esteem_glm1)
+
+esteem_glm2 <- update(esteem_glm1, ~ . - Gender)
+summary(esteem_glm2)
+
+
+#run the optimal model 
+esteem_glm_optimal <- glm(response_var ~ log_income + AFQT + Educ, family = binomial, data = esteem)
+summary(esteem_glm_optimal)
+
+#back transform the estimates and CIs 
+exp(cbind(OR = coef(esteem_glm_optimal), confint(esteem_glm_optimal)))
+
+```
+
+<br>
+
+There is a 14.92% increase in the odds of having a positive self-esteem for every 10 fold increase in 2005 income, after controlling for AFQT score and years of education (95% CI: 5.38% to 25.36%). There is a 8.38% increase in the odds of having a positive self-esteem for every additional year of education, after controlling for income and AFQT score (95% CI: 4.04% to 12.93%). There is 1% increase in the odds of having a positive self-esteem for every one-unit increase in AFQT score, after controlling for income and years of education (95% CI: 0.04% to 1.1%)
+
+<br>
+<span style="color: magenta"> **Supplemental 20.20_3rd** Excellent answer!  Harrell (2015, 2021) argues that you shouldn't automatically drop explanatory variables just because the p value is greater than 0.05. You dropped gender, but you could have presented it too. Females have 14% higher self esteem than males (1-exp(-.146214)), but the 95% CI includes 1.    **Score 2.5/2.5** </span>
+
+***
+
+## 21.21
+
+```{r}
+#read in the data
+wildflower <- Sleuth3::ex1221
+
+#take a look at the dataset
+head(wildflower)
+
+#quick boxplot of the data 
+wildflower %>%
+  ggplot() + 
+  geom_boxplot(aes(x = reorder(Rating, Total), y = Total)) + 
+  labs(x = "Rating") + 
+  theme_classic()
+
+#fit an ordinail logistic regression model 
+wildflower_polr <- polr(Rating ~ Total, data = wildflower)
+summary(wildflower_polr)
+
+
+#back transform the estimate 
+exp(coef(wildflower_polr)) 
+exp(confint(wildflower_polr))
+
+```
+
+<br>
+
+For each unit increase in total rainfall in the months September to March, the wildflower display rating is only 79.82% as likely to increase rating status (95% CI: 71.76% to 88.15%)
+
+<span style="color: magenta"> **Supplemental 21.21_3rd** You are just one of two students to tackle the ordinal logistic. I forgot to present the method in class. Your estimates of the effects are wrong, but I don't have time now to present the proper analysis. I'll provide an R chunk that produces a nice graphic of the response, which improves dramatically with rainfall. **Score 2.5/2.5** </span>
+
+```{r Gallagher chunk}
+library(car)
+library(effects)  # for the Effect function, Fox & Weisberg (2019 p 274, 319)
+library(Hmisc) # for describe function
+library(MASS)
+library(Sleuth3)
+flower<-ex1221
+str(flower)
+describe(flower)
+mod.polr <- polr(factor(Score) ~ Total, data = flower)
+summary(mod.polr)
+# Test for the proportional odds model and assumptions Fox & Weisberg
+# (2019, p 322)
+poTest(mod.polr)
+
+# plot(Effect("Total"), mod.polr) # produces errors, don't know why
+
+plot(Effect("Total", mod.polr),
+     axes=list(y=list(style="stacked")),
+     lines=list(col=gray(c(.1, .3, .5, .7, .9))),
+     main = "ex21.21", xlab = "Total Rainfall (in) Sep - March")
+
+
+```
+
+<br>
+<br>

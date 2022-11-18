@@ -1,0 +1,233 @@
+---
+title: "Hankowsky_HW11"
+output: html_document
+date: "2022-11-18"
+---
+
+
+```{r setup, include=FALSE}
+library(Sleuth3)
+library(tidyverse)
+library(asht)
+library(mosaic)
+library(GGally)
+library(gridExtra)
+library(olsrr)
+library(car)
+library(Hmisc)
+library(MASS)
+
+```
+
+Hankowsky Homework Solutions 
+
+
+# Basic Problems 
+## 22.16
+
+Murder–Suicides by Deliberate Plane Crash. Some sociologists suspect that highly publicized
+suicides may trigger additional suicides. In one investigation of this hypothesis, D. P. Phillips
+collected information about 17 airplane crashes that were known (because of notes left behind) to
+be murder–suicides. For each of these crashes, Phillips reported an index of the news coverage (circulation
+in nine newspapers devoting space to the crash multiplied by length of coverage) and the
+number of multiple-fatality plane crashes during the week following the publicized crash. The data
+are exhibited in Display 22.12. (Data from D. P. Phillips, “Airplane Accident Fatalities Increase Just
+After Newspaper Stories AboutMurder and Suicide,” Science 201 (1978): 748–50.) Is there evidence
+that the mean number of crashes increases with increasing levels of publicity of a murder–suicide?
+
+```{r}
+#read in the data
+planes <- Sleuth3::ex2216
+
+#take a look at the data
+head(planes)
+
+#plot the data
+planes %>%
+  ggplot() + 
+  geom_point(aes(x = Index, y = Crashes)) + 
+  theme_classic()
+
+
+# REGRESSION ANALYSIS USING BACKWARD ELIMINATION
+planes_glm <- glm(Crashes ~ Index, family = poisson, data = planes)
+summary(planes_glm)
+
+#back transform the estimates 
+exp(cbind(OR = coef(planes_glm), confint(planes_glm)))
+
+#Presentation plot 
+planes %>%
+  ggplot(aes(x = Index, y = Crashes)) + 
+  geom_point() + 
+  geom_smooth(method = 'glm', method.args = list(family = 'poisson')) + 
+  labs(x = "Index of News Coverage", y = "Number of Plane Crashes") + 
+  theme_classic()
+  
+```
+
+<br>
+
+Associated with each 1 crash increase there is a 0.2% increase in the index of news coverage (95% CI: 0.03 to 0.3%). 
+
+<br>
+
+***
+
+
+
+## 22.20
+
+Cancer Deaths of Atomic Bomb Survivors. The data in Display 22.13 are the number of
+cancer deaths among survivors of the atomic bombs dropped on Japan during World War II, categorized
+by time (years) after the bomb that death occurred and the amount of radiation exposure that
+the survivors received from the blast. (Data from D. A. Pierce, personal communication.) Also listed
+in each cell is the person-years at risk, in 100’s. This is the sumtotal of all years spent by all persons
+in the category. Suppose that the mean number of cancer deaths in each cell is Poisson with mean
+! D risk"rate, where risk is the person-years at risk and rate is the rate of cancer deaths per person
+per year. It is desired to describe this rate in terms of the amount of radiation, adjusting for the effects
+of time after exposure. (a) Using log(risk) as an offset, fit the Poisson log-linear regression model
+with time after blast treated as a factor (with seven levels) and with rads and rads-squared treated
+as covariates. Look at the deviance statistic and the deviance residuals. Does extra-Poisson variation
+seem to be present? Is the rads-squared term necessary? (b) Try the same model as in part (a); but
+instead of treating time after bomb as a factor with seven levels, compute the midpoint of each interval
+and include log(time) as a numerical explanatory variable. Is the deviance statistic substantially
+larger in this model, or does it appear that time can adequately be represented through this single
+term? (c) Try fitting a model that includes the interaction of log(time) and exposure. Is the interaction
+significant? (d) Based on a good-fitting model, make a statement about the effect of radiation
+exposure on the number of cancer deaths per person per year (and include a confidence interval if
+you supply an estimate of a parameter).
+
+
+```{r}
+#read in the data
+cancer <- Sleuth3::ex2220
+
+#take a look at the data
+head(cancer)
+
+#create the variables as dictated in the question 
+cancer %>% 
+  mutate()
+
+
+```
+
+<br>
+
+
+<br>
+
+***
+
+
+
+# Supplemental Problems 
+## 22.18
+
+Galapagos Islands. Reanalyze the data in Exercise 12.20 with number of native species as the
+response, but using log-linear regression. (a) Fit the model with log area, log elevation, log of distance
+from nearest island, and log area of nearest island as explanatory variables; and then check for extra-
+Poisson variation. (b) Use backward elimination to eliminate insignificant explanatory variables.
+(c) Describe the effects of the remaining explanatory variables.
+
+```{r}
+#read in the data
+islands <- Sleuth3::ex1220
+
+#take a look at the data
+head(islands)
+
+#create the variables as dictated in the question 
+islands <- islands %>% 
+  mutate(log_area = log(Area), 
+         log_elevation = log(Elev), 
+         log_distnear = log(DistNear), 
+         log_areanear = log(AreaNear))
+
+#scatterplot matrix of all the variables of interest 
+ggpairs(islands, columns = (9:12))
+
+
+# PART A
+island_glm_a <- glm(Native ~ log_area + log_elevation + log_distnear + log_areanear, family = poisson, data = islands)
+summary(island_glm_a)
+
+#deviance goodness-of-fit test
+1-pchisq(island_glm_a$deviance, df = island_glm_a$df.residual)
+
+#plot of deviance residuals against the fitted means
+gf_point(residuals(island_glm_a, type = "deviance") ~ fitted(island_glm_a)) %>%
+  gf_hline(yintercept = 0, color = "blue") %>%
+  gf_hline(yintercept = 2, color = "gray60", linetype = 2) %>%
+  gf_hline(yintercept = -2, color = "gray60", linetype = 2) %>%
+  gf_labs(x = "Fitted Means", y = "Deviance Residuals")
+
+
+
+# PART B - using quasipoisson based on Part A 
+island_glm_b1 <- glm(Native ~ log_area + log_elevation + log_distnear + log_areanear, family = quasipoisson, data = islands)
+summary(island_glm_b1)
+
+island_glm_b2 <- update(island_glm_b1, ~ . - log_elevation)
+summary(island_glm_b2)
+
+island_glm_b3 <- update(island_glm_b2, ~ . - log_distnear)
+summary(island_glm_b3)
+
+
+island_glm_optimal <- glm(Native ~ log_area + log_areanear, family = quasipoisson, data = islands)
+summary(island_glm_optimal)
+
+#back transform the estimates 
+exp(cbind(OR = coef(island_glm_optimal), confint(island_glm_optimal)))
+
+```
+
+<br>
+
+The deviance goodness of fit test provides very strong evidence that there is extra-Poisson variation (p-value < 0.0001). The plot of deviance residuals against the fitted means confirms that it is not a result of one or two outliers, rather it seems that the variability in the response exceeds that which is allowed for by the Poisson log-linear model. Thus, Part B was conducted using quasi-likelihood methods. The backwards regression analysis found no evidence for an effect of log[Elevation] (p-value = 0.67) or log[Distance to the Nearest Island] (p-value = 0.13). 
+
+<br>
+
+***
+
+
+
+## 22.24
+
+Valve Failure in Nuclear Reactors. Display 22.16 shows characteristics and numbers of failures
+observed in valve types from one pressurized water reactor. There are five explanatory factors:
+system (1 D containment, 2 D nuclear, 3 D power conversion, 4 D safety, 5 D process auxiliary);
+operator type (1 D air, 2 D solenoid, 3 D motor-driven, 4 D manual); valve type (1 D ball, 2 D
+butterfly, 3 D diaphragm, 4 D gate, 5 D globe, 6 D directional control); head size (1 D less than 2
+inches, 2 D 2–10 inches, 3 D 10–30 inches); and operation mode (1 D normally closed, 2 D normally
+open). The lengths of observation periods are quite different, as indicated in the last column,
+time. Using an offset for log of observation time, identify the factors associated with large numbers
+of valve failures. (Data from L. M. Moore and R. J. Beckman, “Appropriate One-Sided Tolerance
+Bounds on the Number of Failures Using Poisson Regression,” Technometrics 30 (1988): 283–90.)
+
+```{r}
+#read in the data
+valves <- Sleuth3::ex2224
+
+#take a look at the data
+head(valves)
+
+#scatterplot matrix of all the variables of interest 
+ggpairs(valves, columns = (1:5))
+
+
+# REGRESSION ANALYSIS USING BACKWARD ELIMINATION
+values_glm1 <- glm(Failures ~ System + Operator + Valve + Size + Mode, family = poisson, data = valves)
+
+```
+
+<br>
+
+
+<br>
+
+
+
+
