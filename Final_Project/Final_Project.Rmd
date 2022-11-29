@@ -254,8 +254,8 @@ paired_tows_5mi_72hr_re %>%
   filter(sf_species_cpua < 10000) %>%
   filter(nefsc_species_cpua < 10000) %>%
   ggplot() + 
-  geom_bar(aes(x = EFFORT_ID, y = sf_species_cpua), stat = "identity", fill = "blue") + 
-  geom_bar(aes(x = EFFORT_ID, y = -nefsc_species_cpua), stat = "identity", fill = "red") + 
+  geom_bar(aes(x = EFFORT_ID, y = sf_species_cpua), stat = "identity", fill = "red") + 
+  geom_bar(aes(x = EFFORT_ID, y = -nefsc_species_cpua), stat = "identity", fill = "blue") + 
   labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
        title = "Comparison of CPUA for Atlantic Cod", 
        subtitle = "Pairs within 5 mi and 72 hrs")
@@ -309,10 +309,12 @@ exp(cod_ttest$conf.int)
 
 #### Model Runs
 ```{r}
-
+codm <- fit.models(cod_paired_tows_5mi_72hr_re)
+compare.models(codm)
 
 #storing the optimal model and plotting the diagnostics
 codm_optimal <- glm(relative_efficiency ~ VESSEL_NAME +season + BOTTEMP, family = binomial, data = cod_paired_tows_5mi_72hr_re)
+summary(codm_optimal)
 
 par(mfrow=c(2,2))
 plot(codm_optimal)
@@ -327,8 +329,8 @@ paired_tows_5mi_72hr_re %>%
   filter(SVSPP == 105 & SPECIES_ITIS == 172909) %>% 
   distinct(EFFORT_ID, .keep_all = TRUE) %>%
   ggplot() + 
-  geom_bar(aes(x = EFFORT_ID, y = sf_species_cpua), stat = "identity", fill = "red") + 
-  geom_bar(aes(x = EFFORT_ID, y = -nefsc_species_cpua), stat = "identity", fill = "blue") + 
+  geom_bar(aes(x = EFFORT_ID, y = sf_species_cpua), stat = "identity", fill = "blue") + 
+  geom_bar(aes(x = EFFORT_ID, y = -nefsc_species_cpua), stat = "identity", fill = "red") + 
   labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
        title = "Comparison of CPUA for Yellowtail Flounder", 
        subtitle = "Pairs within 5 mi and 72 hrs")
@@ -394,8 +396,8 @@ paired_tows_5mi_72hr_ob_re %>%
   filter(SVSPP == 73 & NESPP4 == 818) %>% 
   distinct(trip_haul_ID, .keep_all = TRUE) %>%
   ggplot() + 
-  geom_bar(aes(x = trip_haul_ID, y = ob_species_cpua), stat = "identity", fill = "red") + 
-  geom_bar(aes(x = trip_haul_ID, y = -nefsc_species_cpua), stat = "identity", fill = "blue") + 
+  geom_bar(aes(x = trip_haul_ID, y = ob_species_cpua), stat = "identity", fill = "blue") + 
+  geom_bar(aes(x = trip_haul_ID, y = -nefsc_species_cpua), stat = "identity", fill = "red") + 
   labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
        title = "Comparison of CPUA for Atlantic Cod", 
        subtitle = "Pairs within 5 mi and 72 hrs")
@@ -436,8 +438,8 @@ paired_tows_5mi_72hr_ob_re %>%
   filter(SVSPP == 105 & NESPP4 == 1230) %>% 
   distinct(trip_haul_ID, .keep_all = TRUE) %>%
   ggplot() + 
-  geom_bar(aes(x = trip_haul_ID, y = ob_species_cpua), stat = "identity", fill = "red") + 
-  geom_bar(aes(x = trip_haul_ID, y = -nefsc_species_cpua), stat = "identity", fill = "blue") + 
+  geom_bar(aes(x = trip_haul_ID, y = ob_species_cpua), stat = "identity", fill = "blue") + 
+  geom_bar(aes(x = trip_haul_ID, y = -nefsc_species_cpua), stat = "identity", fill = "red") + 
   labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
        title = "Comparison of CPUA for Yellowtail Flounder", 
        subtitle = "Pairs within 5 mi and 72 hrs")

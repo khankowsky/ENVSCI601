@@ -68,7 +68,7 @@ planes %>%
 
 <br>
 
-Associated with each 1 crash increase there is a 0.2% increase in the index of news coverage (95% CI: 0.03 to 0.3%). 
+Associated with each 1 unit increase in crashes there is a 0.2% increase in the index of news coverage (95% CI: 0.03% to 0.3%). 
 
 <br>
 
@@ -160,7 +160,7 @@ exp(cbind(OR = coef(cancer_glm_optimal), confint(cancer_glm_optimal)))
 
 Part A: There does seem to be extra-Poisson variation present. The residual deviance is greater than the residual degrees of freedom. A deviance goodness-of-fit test shows inconclusive evidence for extra-Poisson variation (p-value = 0.057). The rads-squared [Exposure-Squared] term is not necessary (p-value = 0.064). 
 
-Part B: The deviance is substantially larger in this model. The deviance in this model was 73.68 on 38 degrees of freedom versus 46.69 on 33 degrees of freedom. 
+Part B: The deviance is larger in this model. The deviance in this model was 73.68 on 38 degrees of freedom versus 46.69 on 33 degrees of freedom. 
 
 Part C: The is no evidence for an effect of the interaction of log(time):Exposure (p-value = 0.28). 
 
@@ -200,17 +200,17 @@ ggpairs(islands, columns = (9:12))
 
 
 # PART A
-# island_glm_a <- glm(Native ~ log_area + log_elevation + log_distnear + log_areanear, family = poisson, data = islands)
-# summary(island_glm_a)
+island_glm_a <- glm(Native ~ log_area + log_elevation + log_distnear + log_areanear, family = poisson, data = islands)
+summary(island_glm_a)
 
-island_glm_a1 <- glm(Native ~ Area + Elev + DistNear + AreaNear, family = quasipoisson, data = islands)
-summary(island_glm_a1)
+# island_glm_a1 <- glm(Native ~ Area + Elev + DistNear + AreaNear, family = quasipoisson, data = islands)
+# summary(island_glm_a1)
 
 #deviance goodness-of-fit test
-1-pchisq(island_glm_a1$deviance, df = island_glm_a1$df.residual)
+1-pchisq(island_glm_a$deviance, df = island_glm_a$df.residual)
 
 #plot of deviance residuals against the fitted means
-gf_point(residuals(island_glm_a1, type = "deviance") ~ fitted(island_glm_a1)) %>%
+gf_point(residuals(island_glm_a, type = "deviance") ~ fitted(island_glm_a)) %>%
   gf_hline(yintercept = 0, color = "blue") %>%
   gf_hline(yintercept = 2, color = "gray60", linetype = 2) %>%
   gf_hline(yintercept = -2, color = "gray60", linetype = 2) %>%
@@ -257,7 +257,7 @@ exp(cbind(OR = coef(island_glm_optimal), confint(island_glm_optimal)))
 
 <br>
 
-The deviance goodness of fit test provides very strong evidence that there is extra-Poisson variation (p-value < 0.0001). The plot of deviance residuals against the fitted means confirms that it is not a result of one or two outliers, rather it seems that the variability in the response exceeds that which is allowed for by the Poisson log-linear model. Thus, Part B was conducted using quasi-likelihood methods. The backwards regression analysis found no evidence for an effect of Distance to the Nearest Island (p-value = 0.68). 
+The deviance goodness of fit test provides very strong evidence that there is extra-Poisson variation (p-value < 0.0001). The plot of deviance residuals against the fitted means confirms that it is not a result of one or two outliers, rather it seems that the variability in the response exceeds that which is allowed for by the Poisson log-linear model. Thus, Part B was conducted using quasi-likelihood methods. The backwards regression analysis found no evidence for an effect of Distance to the Nearest Island (p-value = 0.68). For every 10-fold increase in area, there is a 32.12% increase in the number of native species on the island, after controlling for the area of nearest island (95% CI: 26.03% to 38.79%). For every 10-fold increase in the area of the nearest island, there is a 4.82% reduction in the number of native species on the island, after controlling for island area (95% CI: 0.08% to 8.70%)
 
 <br>
 
