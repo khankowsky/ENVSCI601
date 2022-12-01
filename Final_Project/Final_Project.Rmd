@@ -28,6 +28,8 @@ library(openxlsx)
 library(beepr)
 library(purrr)
 library(rsq)
+library(car)
+library(jtools)
 ```
 
 # Read- In the Data
@@ -163,6 +165,37 @@ compare.models <- function(x) {
 }
 
 
+
+############## FUNCTIONS FOR MODELING OBSERVER DATA ###########################
+#trying to  create functions because I will be running the same models for every species dataset 
+covars <- c("season", "mgmt_area", "AVGDEPTH", "BOTTEMP")
+combos <- purrr::map(1:4, ~as.data.frame(t(combn(covars, .x))))
+
+formulae_ob <- combos %>%
+  map_dfr(unite, col="formula", sep = " + ") %>%
+  mutate(formula = paste0("relative_efficiency ~  trawl_type +", formula))
+
+
+#fit models (takes dataset)
+fit.models_ob <- function(x) {
+  formulae_ob$formula %>% purrr::map( ~glm(.x, family = binomial, data=x))
+}
+
+
+#compare models (takes list of models created by fit.models())
+compare.models_ob <- function(x) {
+  formulae_ob %>%
+  mutate(aic =  purrr::map_dbl(x, AIC)) %>%
+  arrange(desc(aic)) %>%
+  mutate(deltaAIC = aic - aic[15]) %>%
+  mutate(rsq =  purrr::map_dbl(x, Dsquared)) %>% 
+  mutate(rsq = sprintf("%0.2f", rsq)) %>%
+  mutate(aic = sprintf("%1.0f", aic)) %>%
+  mutate(deltaAIC = sprintf("%1.0f", deltaAIC)) %>%
+  kbl(col.names = (c("Model", "AIC", "deltaAIC","Deviance Explained"))) %>%
+  kable_classic("striped", full_width = FALSE)
+}
+
 ```
 
 
@@ -207,6 +240,7 @@ paired_tows_5mi_72hr_ob_re <- paired_tows_5mi_72hr_ob %>%
     month(START_TOW_DATE_GMT) %in% c(03, 04, 05) ~ "Spring", 
     month(START_TOW_DATE_GMT) %in% c(09, 10, 11) ~ "Fall", 
   )) %>%
+  mutate(trawl_type = as.factor(trawl_type)) %>%
   distinct()
 ```
 
@@ -309,15 +343,43 @@ exp(cod_ttest$conf.int)
 
 #### Model Runs
 ```{r}
+#scatterplot matrix of all the variables of interest 
+ggpairs(cod_paired_tows_5mi_72hr_re, columns = c("VESSEL_NAME", "season", "mgmt_area", "AVGDEPTH", "BOTTEMP"), 
+        cardinality_threshold = 17)
+
+#running all the models w every combination of variables and comparing them based on AIC and deviance explained 
 codm <- fit.models(cod_paired_tows_5mi_72hr_re)
 compare.models(codm)
 
+
 #storing the optimal model and plotting the diagnostics
-codm_optimal <- glm(relative_efficiency ~ VESSEL_NAME +season + BOTTEMP, family = binomial, data = cod_paired_tows_5mi_72hr_re)
+codm_optimal <- glm(relative_efficiency ~ VESSEL_NAME + season + BOTTEMP, family = binomial, data = cod_paired_tows_5mi_72hr_re)
 summary(codm_optimal)
 
 par(mfrow=c(2,2))
 plot(codm_optimal)
+
+
+#back transform the estimates and CIs 
+exp(cbind(OR = coef(codm_optimal), confint(codm_optimal)))
+
+#look at the component residual plots 
+crPlots(codm_optimal)
+
+# looking at the effect_plot
+effect_plot(codm_optimal, pred = VESSEL_NAME)
+
+
+# REGRESSION ANALYSIS USING BACKWARD ELIMINATION
+#fit a full model 
+cod_glm1 <- glm(relative_efficiency ~ VESSEL_NAME + season + mgmt_area + AVGDEPTH + BOTTEMP, 
+                family = binomial, data = cod_paired_tows_5mi_72hr_re)
+summary(cod_glm1)
+
+
+
+
+
 ```
 
 
@@ -382,6 +444,23 @@ exp(yellowtail_ttest$conf.int)
 
 #### Model Runs 
 ```{r}
+#scatterplot matrix of all the variables of interest 
+ggpairs(yellowtailfl_paired_tows_5mi_72hr_re, columns = c("VESSEL_NAME", "season", "mgmt_area", "AVGDEPTH", "BOTTEMP"), 
+        cardinality_threshold = 17)
+
+
+#running all the models w every combination of variables and comparing them based on AIC and deviance explained 
+yellowtailm <- fit.models(yellowtailfl_paired_tows_5mi_72hr_re)
+compare.models(yellowtailm)
+
+
+#storing the optimal model and plotting the diagnostics
+yellowtailm_optimal <- glm(relative_efficiency ~ VESSEL_NAME + AVGDEPTH + BOTTEMP, family = binomial, data = yellowtailfl_paired_tows_5mi_72hr_re)
+summary(yellowtailm_optimal)
+
+par(mfrow=c(2,2))
+plot(codm_optimal)
+
 
 ```
 
@@ -420,11 +499,36 @@ paired_tows_5mi_72hr_ob_re %>%
 #### T-Tests
 ```{r}
 
+
 ```
 
 #### Model Runs 
 ```{r}
+#scatterplot matrix of all the variables of interest 
+ggpairs(cod_paired_tows_5mi_72hr_ob_re, columns = c("trawl_type", "season", "mgmt_area", "AVGDEPTH", "BOTTEMP"))
 
+#running all the models w every combination of variables and comparing them based on AIC and deviance explained 
+codm <- fit.models_ob(cod_paired_tows_5mi_72hr_ob_re)
+compare.models_ob(codm)
+
+
+#storing the optimal model and plotting the diagnostics
+codm_optimal <- glm(relative_efficiency ~ trawl_type + AVGDEPTH, family = binomial, data = cod_paired_tows_5mi_72hr_ob_re)
+summary(codm_optimal)
+
+par(mfrow=c(2,2))
+plot(codm_optimal)
+
+
+#back transform the estimates and CIs 
+exp(cbind(OR = coef(codm_optimal), confint(codm_optimal)))
+
+#look at the component residual plots 
+crPlots(codm_optimal)
+
+# looking at the effect_plot
+effect_plot(codm_optimal, pred = trawl_type, interval = TRUE, partial.residuals = TRUE, 
+            jitter = 0.2)
 ```
 
 
@@ -489,21 +593,31 @@ exp(yellowtail_ttest_ob$conf.int)
 
 #### Model Runs 
 ```{r}
-yellowtailflm <- fit.models(yellowtailfl_paired_tows_5mi_72hr_ob_re)
+#scatterplot matrix of all the variables of interest 
+ggpairs(yellowtailfl_paired_tows_5mi_72hr_ob_re, columns = c("trawl_type", "season", "mgmt_area", "AVGDEPTH", "BOTTEMP"))
 
-compare.models(yellowtailflm)
+#running all the models w every combination of variables and comparing them based on AIC and deviance explained 
+yellowtailm_ob <- fit.models_ob(yellowtailfl_paired_tows_5mi_72hr_ob_re)
+compare.models_ob(yellowtailm_ob)
 
 
 #storing the optimal model and plotting the diagnostics
-yellowtailflm_ob_optimal <- glm(relative_efficiency ~ trawl_type, family = binomial, data = yellowtailfl_paired_tows_5mi_72hr_ob_re)
+yellowtailm_optimal <- glm(relative_efficiency ~ trawl_type + season, family = binomial, data = yellowtailfl_paired_tows_5mi_72hr_ob_re)
+summary(yellowtailm_optimal)
 
 par(mfrow=c(2,2))
-plot(yellowtailflm_ob_optimal)
+plot(yellowtailm_optimal)
 
-summary(yellowtailflm_ob_optimal)
 
-#back transform the estimates into an odds-ratio 
-exp(cbind(OR = coef(yellowtailflm_ob_optimal), confint(yellowtailflm_ob_optimal)))
+#back transform the estimates and CIs 
+exp(cbind(OR = coef(yellowtailm_optimal), confint(yellowtailm_optimal)))
+
+#look at the component residual plots 
+crPlots(yellowtailm_optimal)
+
+# looking at the effect_plot
+effect_plot(yellowtailm_optimal, pred = trawl_type, interval = TRUE, partial.residuals = TRUE, 
+            jitter = 0.2)
 ```
 
 
