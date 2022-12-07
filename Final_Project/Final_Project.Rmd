@@ -403,11 +403,25 @@ yellowtailfl_paired_tows_5mi_72hr_ob_re <- paired_tows_5mi_72hr_ob_re %>%
 
 ***
 
+# Introduction 
+New England groundfish have been harvested commercially for more than 400 years. However, in the last thirty years, stocks of several important species have declined severely with a few at historically low levels. The Northeast Fisheries Science Center (NEFSC) bottom trawl survey is an essential component for stock assessment and fishery management in New England. However, many stock assessments rely on uncertain estimates of catchability. Commercial fishers’ on the water observations as well as recent studies suggest that the NEFSC bottom trawl survey is not 100% efficient for most of the species it surveys. Differences in catch efficiency and inaccurate estimates of survey catchability can result in added uncertainty for stock assessments, impacting the management process, catch limits, and the economic viability of commercial fisheries. Following other experiments in the region, this study aims to provide estimates of survey efficiency for several species in the multi-species groundfish complex. In the absence of an experimental paired-gear study, an opportunistic approach was used to compare the relative efficiency of survey gears to commercial gears. High resolution fisheries dependent data from the NEFSC’s Study Fleet and Observer programs were leveraged to identify tows that occurred in the relative vicinity and timeframe of NEFSC survey tows. Catch ratios between commercial trawl gears and the NEFSC bottom trawl survey were compared and the relative efficiency for the NEFSC survey was estimated. Relative efficiency estimates can be used to help improve estimates of catchability in the stock assessment process.
 
-# Study Fleet and NEFSC Pairs
-## 5m and 72hr Paired Tows
-### Cod
-#### Exploratory Vizualization 
+A first-cut analysis will use paired t-tests or Wiloxcon sign-rank test to assess differences in mean catch between commercial and survey trawl nets. More advanced analysis will be conducted with generalized liner models (GLM) with a binomial distribution to model and compare catch rates. The response variable will be the survey catch divided by the total catch from the commercial trawl and survey trawl for each paired observation for each species of interest. 
+$$
+\frac{C_s}{C_s + C_c}
+$$
+Explanatory variables will include trawl net characteristics, environmental conditions and seasonal information. 
+
+<br>
+<br>
+
+
+# Results 
+
+### Study Fleet and NEFSC Pairs
+### 5m and 72hr Paired Tows
+#### Cod
+#### Exploratory Visualization 
 ```{r}
 #Looking at the cpua for the paired tows for each species 
 paired_tows_5mi_72hr_re %>%
@@ -460,7 +474,7 @@ paired_tows_5mi_72hr_re %>%
   #                                               y = START_TOW_LAT.x, yend = END_TOW_LAT.x)) +
   coord_sf(ylim = c(39, 44),  xlim = c(-74, -66)) + 
   scale_colour_manual("", breaks = c("NEFSC", "Study Fleet"), values = c("blue", "red")) +
-  labs(title = "Study Fleet tows Matched to NEFSC tows", subtitle = "within 5 mi and 72 hrs")
+  labs(title = "Map of Matched Study Fleet and NEFSC Tows for Cod", subtitle = "within 5 mi and 72 hrs")
 
 ```
 
@@ -472,7 +486,7 @@ say something about the exploratory plots
 
 
 #### T-Test
-```{r, warning = FALSE}
+```{r, warning = FALSE, message = FALSE}
 #looking at the boxplot and histograms of the catch per unit area 
 box.plot(cod_paired_tows_5mi_72hr_re)
 hist_kh(cod_paired_tows_5mi_72hr_re)
@@ -510,15 +524,15 @@ exp(cod_ttest$conf.int)
 
 <br>
 
-The histograms for the data show that the catch rates for the commercial and survey nets are not normally distributed. However, because the data are paired, two observations (commercial/survey CPUA) from one study unit ('paired tow') the difference in catch-per-unit area needs to be investigated. The difference in catch-per-unit area is not normally distributed and is not symmetric, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed and the boxplot shows relative symmetry, so the analysis was conducted with the log-transformed data.
+The boxplot for the data shows that the variance is not equal and the histogram shows that the catch rates for the commercial and survey nets are not normally distributed. However, because the data are paired, two observations (commercial/survey CPUA) from one study unit ('paired tow') the difference in catch-per-unit area needs to be investigated. The difference in catch-per-unit area is not normally distributed and is not symmetric, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed and the boxplot shows relative symmetry, so the analysis was conducted with the log-transformed data.
 
-These data provide substantial evidence that the mean difference between commercial and survey catch rates is non-zero (two-sided p-value < 0.00001 from a paired t-test). The mean for catch rate for Cod for commercial fishermen from the study fleet was estimated to be 2.51 times the mean catch rate for the NEFSC survey (95% confidence interval: 1.72 to 3.64 times).
+These data provide substantial evidence that the mean difference between commercial and survey catch-per-unit area is non-zero (two-sided p-value < 0.00001 from a paired t-test). The mean for catch rate for Cod for commercial trawls from the study fleet was estimated to be 2.51 times the mean catch rate for the NEFSC survey (95% confidence interval: 1.72 to 3.64 times).
 
 <br>
 
 
 #### Model Runs
-```{r}
+```{r, warning = FALSE, message = FALSE}
 #scatterplot matrix of all the variables of interest 
 ggpairs(cod_paired_tows_5mi_72hr_re, columns = c("VESSEL_NAME", "season", "mgmt_area", "AVGDEPTH", "BOTTEMP"), 
         cardinality_threshold = 17)
@@ -549,8 +563,10 @@ exp(cbind(OR = coef(codm_optimal), confint(codm_optimal)))
 #look at the component residual plots 
 crPlots(codm_optimal)
 
-# looking at the effect_plot
-effect_plot(codm_optimal, pred = VESSEL_NAME)
+# looking at the effect_plot - these dont work with binomial regression 
+# effect_plot(codm_optimal, pred = VESSEL_NAME) + 
+#   labs(x = "Vessel Name", y = "Relative Efficiency") + 
+#   coord_flip()
 
 
 
@@ -575,6 +591,7 @@ cod_paired_tows_5mi_72hr_re1 %>%
   ggplot(aes(x = VESSEL_NAME, 
              y = fitted, color = mgmt_area)) + 
   geom_jitter() + 
+  labs(x = "Vessel Name", y = "Fitted Values") + 
   coord_flip()
 
 #season
@@ -596,7 +613,8 @@ cod_paired_tows_5mi_72hr_re1 %>%
 #getting final RE estimate 
 cod_paired_tows_5mi_72hr_re1 %>%
   group_by(VESSEL_NAME) %>%
-  summarise(mean(fitted), n = n())
+  summarise(mean(fitted), n = n()) %>% 
+  mutate()
 
 
 cod_paired_tows_5mi_72hr_re1 %>%
@@ -637,8 +655,8 @@ explanation of binomial glm results
 
 ***
 
-### YellowTail Flounder
-#### Exploratory Vizualization 
+#### YellowTail Flounder
+#### Exploratory Visualization 
 ```{r}
 #Looking at the cpua for the paired tows for each species 
 paired_tows_5mi_72hr_re %>%
@@ -686,7 +704,7 @@ paired_tows_5mi_72hr_re %>%
   #                                               y = START_TOW_LAT.x, yend = END_TOW_LAT.x)) +
   coord_sf(ylim = c(39, 44),  xlim = c(-74, -66)) + 
   scale_colour_manual("", breaks = c("NEFSC", "Study Fleet"), values = c("blue", "red")) +
-  labs(title = "Study Fleet tows Matched to NEFSC tows", subtitle = "within 5 mi and 72 hrs")
+  labs(title = "Map of Matched Study Fleet and NEFSC Tows for Yellowtail Flounder", subtitle = "within 5 mi and 72 hrs")
 ```
 
 <br>
@@ -697,7 +715,7 @@ say something about the exploratory plots
 
 
 #### T-Test
-```{r}
+```{r, warning = FALSE, message = FALSE}
 #looking at the boxplot and histograms of the catch per unit area 
 box.plot(yellowtailfl_paired_tows_5mi_72hr_re)
 hist_kh(yellowtailfl_paired_tows_5mi_72hr_re)
@@ -737,15 +755,15 @@ exp(yellowtail_ttest$conf.int)
 
 <br>
 
-The histograms for the data show that the catch rates for the commercial and survey nets are not normally distributed. However, because the data are paired, two observations (commercial/survey CPUA) from one study unit ('paired tow') the difference in catch-per-unit area needs to be investigated. The difference in catch-per-unit area is not normally distributed and is not symmetric, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed and the boxplot shows relative symmerty, so the analysis was conducted with the log-transformed data.
+The boxplot for the data shows that the variance is relatively equal but the histogram shows that the catch rates for the commercial and survey nets are not normally distributed. However, because the data are paired, two observations (commercial/survey CPUA) from one study unit ('paired tow') the difference in catch-per-unit area needs to be investigated. The difference in catch-per-unit area is not normally distributed and is somewhat symmetric, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed and the boxplot shows relative symmetry, so the analysis was conducted with the log-transformed data.
 
-These data provide inconclusive evidence that the mean difference between commercial and survey catch rates is non-zero (two-sided p-value = 0.061 from a paired t-test). The mean for catch rate for Yellowtail Flounder for commercial fishermen from the study fleet was estimated to be 1.44 times the mean catch rate for the NEFSC survey (95% confidence interval: 0.98 to 2.11 times).
+These data provide inconclusive evidence that the mean difference between commercial and survey catch rates is non-zero (two-sided p-value = 0.061 from a paired t-test). The mean catch rate for Yellowtail Flounder for commercial trawls from the study fleet was estimated to be 1.44 times the mean catch rate for the NEFSC survey (95% confidence interval: 0.98 to 2.11 times).
 
 <br>
 
 
 #### Model Runs 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 #scatterplot matrix of all the variables of interest 
 ggpairs(yellowtailfl_paired_tows_5mi_72hr_re, columns = c("VESSEL_NAME", "season", "mgmt_area", "AVGDEPTH", "BOTTEMP"), 
         cardinality_threshold = 17)
@@ -845,11 +863,11 @@ explaination of binomial glms results
 ***
 ***
 
-# Observer and NEFSC Pairs
-## 5m and 72hr Paired Tows
-### Cod
-#### Exploratory Vizualization 
-```{r}
+### Observer and NEFSC Pairs
+### 5m and 72hr Paired Tows
+#### Cod
+#### Exploratory Visualization 
+```{r, warning = FALSE, message = FALSE}
 paired_tows_5mi_72hr_ob_re %>%
   filter(SVSPP == 73 & NESPP4 == 818) %>% 
   distinct(trip_haul_ID, .keep_all = TRUE) %>%
@@ -895,7 +913,7 @@ paired_tows_5mi_72hr_ob_re %>%
   #                                               y = START_TOW_LAT.x, yend = END_TOW_LAT.x)) +
   coord_sf(ylim = c(39, 44),  xlim = c(-74, -66)) + 
   scale_colour_manual("", breaks = c("NEFSC", "Observer"), values = c("blue", "red")) +
-  labs(title = "Observer tows Matched to NEFSC tows", subtitle = "within 5 mi and 72 hrs")
+  labs(title = "Map of Matched Observer and NEFSC Tows for Cod", subtitle = "within 5 mi and 72 hrs")
 
 
 ```
@@ -908,7 +926,7 @@ say something about the exploratory plots
 
 
 #### T-Test
-```{r}
+```{r, warning = FALSE, message = FALSE}
 #looking at the boxplot and histograms of the catch per unit area 
 box.plot_ob(cod_paired_tows_5mi_72hr_ob_re)
 hist_kh_ob(cod_paired_tows_5mi_72hr_ob_re)
@@ -944,13 +962,15 @@ cod_ttest_ob
 
 <br>
 
+The boxplot for the data shows that the variance is not equal and the histogram shows that the catch rates for the commercial and survey nets are not normally distributed. However, because the data are paired, two observations (commercial/survey CPUA) from one study unit ('paired tow') the difference in catch-per-unit area needs to be investigated. The difference in catch-per-unit area is normally distributed and is symmetric, so the analysis was conducted on the raw data.
+
 These data provide no evidence that the mean difference between commercial and survey catch rates is non-zero (two-sided p-value = 0.58 from a paired t-test). The mean catch rate for Cod for commercial fishermen from the observer dataset was estimated to be 35.52 lb/km2 less than the mean catch rate for the NEFSC survey (95% confidence interval: 165.77 to +94.74 times).
 
 <br>
 
 
 #### Model Runs 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 #scatterplot matrix of all the variables of interest 
 ggpairs(cod_paired_tows_5mi_72hr_ob_re, columns = c("trawl_type", "season", "mgmt_area", "AVGDEPTH", "BOTTEMP"))
 
@@ -973,9 +993,9 @@ exp(cbind(OR = coef(codm_ob_optimal), confint(codm_ob_optimal)))
 #look at the component residual plots 
 crPlots(codm_ob_optimal)
 
-# looking at the effect_plot
-effect_plot(codm_ob_optimal, pred = trawl_type, interval = TRUE, partial.residuals = TRUE, 
-            jitter = 0.2)
+# looking at the effect_plot - these dont work with binomial regressions 
+# effect_plot(codm_ob_optimal, pred = trawl_type, interval = TRUE, partial.residuals = TRUE, 
+#             jitter = 0.2)
 
 
 
@@ -1060,6 +1080,14 @@ cod_paired_tows_5mi_72hr_ob_re %>%
   )
 
 
+
+cod_paired_tows_5mi_72hr_ob_re %>%
+  ggplot(aes(x = AVGDEPTH, y = relative_efficiency, color = trawl_type, pch = trawl_type)) + 
+  geom_point() + 
+  geom_smooth(method = 'glm', method.args = list(family = 'binomial')) + 
+  labs(x = "Average Depth", y = "Relative Efficiency") + 
+  theme_classic()
+
 ```
 
 <br>
@@ -1069,8 +1097,8 @@ explaination of the binomal glm results
 <br>
 
 
-### YellowTail Flounder
-#### Exploratory Vizualization 
+#### YellowTail Flounder
+#### Exploratory Visualization 
 ```{r}
 #Looking at the cpua for the paired tows for each species 
 paired_tows_5mi_72hr_ob_re %>%
@@ -1118,7 +1146,7 @@ paired_tows_5mi_72hr_ob_re %>%
   #                                               y = START_TOW_LAT.x, yend = END_TOW_LAT.x)) +
   coord_sf(ylim = c(39, 44),  xlim = c(-74, -66)) + 
   scale_colour_manual("", breaks = c("NEFSC", "Observer"), values = c("blue", "red")) +
-  labs(title = "Observer tows Matched to NEFSC tows", subtitle = "within 5 mi and 72 hrs")
+  labs(title = "Map of Matched Observer and NEFSC Tows for Yellowtail Flounder", subtitle = "within 5 mi and 72 hrs")
 ```
 
 <br>
@@ -1129,7 +1157,7 @@ Say something ab the exploratory plots
 
 
 #### T-Test
-```{r}
+```{r, warning = FALSE, message = FALSE}
 #looking at the boxplot and histograms of the catch per unit area 
 box.plot_ob(yellowtailfl_paired_tows_5mi_72hr_ob_re)
 hist_kh_ob(yellowtailfl_paired_tows_5mi_72hr_ob_re)
@@ -1168,16 +1196,16 @@ exp(yellowtail_ttest_ob$conf.int)
 
 <br>
 
-The histograms for the data show that the catch rates for the commercial and survey nets are not normally distributed. However, because the data are paired, two observations (commercial/survey CPUA) from one study unit ('paired tow') the difference in catch-per-unit area needs to be investigated. The difference in catch-per-unit area is not normally distributed and is not symmetric, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed and the boxplot shows relative symmetry, so the analysis was conducted with the log-transformed data.
+The boxplot for the data shows that the variance is relatively equal but the histogram shows that the catch rates for the commercial and survey nets are not normally distributed. However, because the data are paired, two observations (commercial/survey CPUA) from one study unit ('paired tow') the difference in catch-per-unit area needs to be investigated. The difference in catch-per-unit area is not normally distributed and is only somewhat symmetric, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed and the boxplot shows relative symmetry, so the analysis was conducted with the log-transformed data.
 
 
-These data provide suggestive evidence that the mean difference between commercial and survey catch rates is non-zero (two-sided p-value = 0.029 from a paired t-test). The mean catch rate for Yellowtail Flounder for commercial fishermen from the observer dataset was estimated to be 37% less than the mean catch rate for the NEFSC survey (95% confidence interval: 0.045% to 57%).
+These data provide suggestive evidence that the mean difference between commercial and survey catch rates is non-zero (two-sided p-value = 0.029 from a paired t-test). The mean catch rate for Yellowtail Flounder for commercial trawls from the observer dataset was estimated to be 37% less than the mean catch rate for the NEFSC survey (95% confidence interval: 0.045% to 57%).
 
 <br>
 
 
 #### Model Runs 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 #scatterplot matrix of all the variables of interest 
 ggpairs(yellowtailfl_paired_tows_5mi_72hr_ob_re, columns = c("trawl_type", "season", "mgmt_area", "AVGDEPTH", "BOTTEMP"))
 
@@ -1200,9 +1228,9 @@ exp(cbind(OR = coef(yellowtailm_ob_optimal), confint(yellowtailm_ob_optimal)))
 #look at the component residual plots 
 crPlots(yellowtailm_ob_optimal)
 
-# looking at the effect_plot
-effect_plot(yellowtailm_ob_optimal, pred = trawl_type, interval = TRUE, partial.residuals = TRUE, 
-            jitter = 0.2)
+# looking at the effect_plot - these dont work with binomial regression 
+# effect_plot(yellowtailm_ob_optimal, pred = trawl_type, interval = TRUE, partial.residuals = TRUE, 
+#             jitter = 0.2)
 
 
 
@@ -1263,12 +1291,32 @@ yellowtailfl_paired_tows_5mi_72hr_ob_re %>%
     fill = "red"
   )
 
+
+
+
+
+
+
+hist(yellowtailfl_paired_tows_5mi_72hr_ob_re$relative_efficiency)
+hist(yellowtailfl_paired_tows_5mi_72hr_ob_re$fitted)
+
+
 ```
 
 <br>
 
-explaination of the binomal glm results 
+explanation of the binomal glm results 
 
 <br>
+
+
+# Conclusion
+
+
+
+
+
+
+
 <br>
 
