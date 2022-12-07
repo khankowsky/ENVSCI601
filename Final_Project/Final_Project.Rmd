@@ -4,7 +4,7 @@ output: html_document
 date: "2022-11-14"
 ---
 
-```{r}
+```{r, include = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(readxl)
 library(janitor)
@@ -32,8 +32,8 @@ library(car)
 library(jtools)
 ```
 
+```{r, include = FALSE}
 # Read- In the Data
-```{r}
 paired_tows_1mi_24hr <- read.csv('./data/paired_tows_1mi_24hr.csv')
 paired_tows_5mi_72hr <- read.csv('./data/paired_tows_5mi_72hr.csv')
 
@@ -41,8 +41,7 @@ paired_tows_1mi_24hr_ob <- read.csv('./data/paired_tows_1mi_24hr_ob.csv')
 paired_tows_5mi_72hr_ob <- read.csv('./data/paired_tows_5mi_72hr_ob.csv')
 ```
 
-# Data for Maps 
-```{r}
+```{r, include = FALSE}
 #Additional Data for Maps
 #Statistical Areas
 sareas <- st_read(dsn = "./data/Statistical_Areas_2010_withNames") %>%
@@ -67,136 +66,194 @@ nefsc_strata <- st_read(dsn = "./data/strata") %>%
 
 ```
 
+
+```{r, include = FALSE}
 # Function Creation 
-```{r}
 ##############################################################################
 #################### FUNCTIONS FOR T-TESTS ###################################
 ##############################################################################
 
+box.plot_diff <- function(x) {
+  x %>% 
+  ggplot() + 
+  geom_boxplot(aes(y = diff)) + 
+  labs(y = bquote("Difference between Study Fleet and NEFSC CPUA [lb/"*km^2*"]")) + 
+  theme_classic()
+}
+
+box.plot_diff_log <- function(x) {
+  x %>% 
+  ggplot() + 
+  geom_boxplot(aes(y = diff_of_logs)) + 
+  labs(y = bquote("Ln(Difference between Study Fleet and NEFSC CPUA [lb/"*km^2*"])")) + 
+  theme_classic()
+}
+
+
+hist_kh_diff <- function(x) {
+  x %>%  
+  ggplot() + 
+  geom_histogram(aes(x = diff)) + 
+  labs(x = bquote("Difference between Study Fleet and NEFSC CPUA [lb/"*km^2*"]"), 
+       y = "Count") + 
+  theme_classic()
+}
+
+hist_kh_diff_log <- function(x) {
+  x %>%  
+  ggplot() + 
+  geom_histogram(aes(x = diff_of_logs)) + 
+  labs(x = bquote("Ln(Difference between Study Fleet and NEFSC CPUA [lb/"*km^2*"])"), 
+       y = "Count") + 
+  theme_classic()
+}
+
+
+####################### STUFF I DIDNT END UP USING ############################
+
+CPUA_label <- bquote("CPUA [lb/"*km^2*"]")
+logCPUA_lable <- bquote("Log(CPUA [lb/"*km^2*"])")
+
 #plots to check for normality before t-tests 
 #boxplot of catch per unit area
 box.plot <- function(x) {
-  x %>% 
-  pivot_longer(cols = c(sf_species_cpua, nefsc_species_cpua), 
-               names_to = "Trawl", 
+  x %>%
+  pivot_longer(cols = c(sf_species_cpua, nefsc_species_cpua),
+               names_to = "Trawl",
                values_to = "CPUA") %>%
   filter(CPUA < 10000) %>%
-  ggplot() + 
-  geom_boxplot(aes(x = Trawl, y = CPUA)) + 
-  labs(x = "Trawl Type") + 
-  scale_x_discrete(labels = c("nefsc_species_cpua" = "NEFSC", 
-                              "sf_species_cpua" = "Study Fleet")) + 
+  ggplot() +
+  geom_boxplot(aes(x = Trawl, y = CPUA)) +
+  labs(x = "Trawl Type", y = CPUA_label) +
+  scale_x_discrete(labels = c("nefsc_species_cpua" = "NEFSC",
+                              "sf_species_cpua" = "Study Fleet")) +
   theme_classic()
 }
 
 #histogram of catch per unit area
 hist_kh <- function(x) {
-  x %>%  
-  ggplot() + 
-  geom_histogram(aes(x = sf_species_cpua, y = ..density..), fill = "red") + 
-  geom_label(aes(x = Inf, y = Inf, label = "Study Fleet CPUE", vjust =1 , hjust = 1), color = "red") +
-  geom_histogram(aes(x = nefsc_species_cpua, y = -..density..), fill = "blue") + 
-  geom_label(aes(x = Inf, y = -Inf, label = "NEFSC CPUE", vjust = -1, hjust = 1), color = "blue") +
-  labs(x = "CPUA (lb/min)", y = "Density", 
-       title = "Histogram of CPUE for x", 
-       subtitle = "Pairs within 5 mi and 72 hrs") + 
-  xlim(0,2000) + 
-  theme_classic()
-}
-  
-
-#boxplot with log-transformed data 
-box.log.plot <- function(x) {
-  x %>% 
-  pivot_longer(cols = c(log_sf_species_cpua, log_nefsc_species_cpua), 
-               names_to = "Trawl", 
-               values_to = "CPUA") %>%
-  filter(CPUA < 10000) %>%
-  ggplot() + 
-  geom_boxplot(aes(x = Trawl, y = CPUA)) + 
-  labs(x = "Trawl Type", y = "Log(CPUA)") + 
-  scale_x_discrete(labels = c("log_nefsc_species_cpua" = "NEFSC", 
-                              "log_sf_species_cpua" = "Study Fleet")) + 
-  theme_classic()
-}
-
-#histogram with log-transformed data 
-hist_log_kh <- function(x) {
-  x %>%  
-  ggplot() + 
-  geom_histogram(aes(x = log_sf_species_cpua, y = ..density..), fill = "red") + 
+  x %>%
+  ggplot() +
+  geom_histogram(aes(x = sf_species_cpua, y = ..density.., fill = "Study Fleet")) +
   # geom_label(aes(x = Inf, y = Inf, label = "Study Fleet CPUE", vjust =1 , hjust = 1), color = "red") +
-  geom_histogram(aes(x = log_nefsc_species_cpua, y = -..density..), fill = "blue") + 
+  geom_histogram(aes(x = nefsc_species_cpua, y = -..density.., fill = "NEFSC")) +
   # geom_label(aes(x = Inf, y = -Inf, label = "NEFSC CPUE", vjust = -1, hjust = 1), color = "blue") +
-  labs(x = "Log(CPUA (lb/min))", y = "Density", 
-       title = "Histogram of CPUE for x", 
-       subtitle = "Pairs within 5 mi and 72 hrs") + 
+  labs(x = CPUA_label, y = "Density",
+       # title = "Histogram of CPUE for x",
+       # subtitle = "Pairs within 5 mi and 72 hrs"
+       ) +
+  xlim(0,2000) +
+  scale_fill_manual(name = "Dataset",
+                    values = c("Study Fleet" = "red", "NEFSC" = "blue"),
+                    labels = c("Study Fleet", "NEFSC")) +
   theme_classic()
 }
-
-
-############## FUNCTIONS FOR T-TESTS FOR OBSERVER DATA #######################
-
-#plots to check for normality before t-tests 
-#boxplot of catch per unit area
+#   
+# 
+# #boxplot with log-transformed data 
+# box.log.plot <- function(x) {
+#   x %>% 
+#   pivot_longer(cols = c(log_sf_species_cpua, log_nefsc_species_cpua), 
+#                names_to = "Trawl", 
+#                values_to = "CPUA") %>%
+#   filter(CPUA < 10000) %>%
+#   ggplot() + 
+#   geom_boxplot(aes(x = Trawl, y = CPUA)) + 
+#   labs(x = "Trawl Type", y = logCPUA_lable) + 
+#   scale_x_discrete(labels = c("log_nefsc_species_cpua" = "NEFSC", 
+#                               "log_sf_species_cpua" = "Study Fleet")) + 
+#   theme_classic()
+# }
+# 
+# #histogram with log-transformed data 
+# hist_log_kh <- function(x) {
+#   x %>%  
+#   ggplot() + 
+#   geom_histogram(aes(x = log_sf_species_cpua, y = ..density.., fill = "Study Fleet")) + 
+#   # geom_label(aes(x = Inf, y = Inf, label = "Study Fleet CPUE", vjust =1 , hjust = 1), color = "red") +
+#   geom_histogram(aes(x = log_nefsc_species_cpua, y = -..density.., fill = "NEFSC")) + 
+#   # geom_label(aes(x = Inf, y = -Inf, label = "NEFSC CPUE", vjust = -1, hjust = 1), color = "blue") +
+#   labs(x = logCPUA_lable, y = "Density", 
+#        # title = "Histogram of CPUE for x", 
+#        # subtitle = "Pairs within 5 mi and 72 hrs"
+#        ) + 
+#   scale_fill_manual(name = "Dataset", 
+#                     values = c("Study Fleet" = "red", "NEFSC" = "blue"), 
+#                     labels = c("Study Fleet", "NEFSC")) + 
+#   theme_classic()
+# }
+# 
+# 
+# ############## FUNCTIONS FOR T-TESTS FOR OBSERVER DATA #######################
+# 
+# #plots to check for normality before t-tests 
+# #boxplot of catch per unit area
 box.plot_ob <- function(x) {
-  x %>% 
-  pivot_longer(cols = c(ob_species_cpua, nefsc_species_cpua), 
-               names_to = "Trawl", 
+  x %>%
+  pivot_longer(cols = c(ob_species_cpua, nefsc_species_cpua),
+               names_to = "Trawl",
                values_to = "CPUA") %>%
   filter(CPUA < 10000) %>%
-  ggplot() + 
-  geom_boxplot(aes(x = Trawl, y = CPUA)) + 
-  labs(x = "Trawl Type") + 
-  scale_x_discrete(labels = c("nefsc_species_cpua" = "NEFSC", 
-                              "ob_species_cpua" = "Observer")) + 
+  ggplot() +
+  geom_boxplot(aes(x = Trawl, y = CPUA)) +
+  labs(x = "Trawl Type", y = CPUA_label) +
+  scale_x_discrete(labels = c("nefsc_species_cpua" = "NEFSC",
+                              "ob_species_cpua" = "Observer")) +
   theme_classic()
 }
 
 #histogram of catch per unit area
 hist_kh_ob <- function(x) {
-  x %>%  
-  ggplot() + 
-  geom_histogram(aes(x = ob_species_cpua, y = ..density..), fill = "red") + 
-  geom_label(aes(x = Inf, y = Inf, label = "Observer CPUE", vjust =1 , hjust = 1), color = "red") +
-  geom_histogram(aes(x = nefsc_species_cpua, y = -..density..), fill = "blue") + 
-  geom_label(aes(x = Inf, y = -Inf, label = "NEFSC CPUE", vjust = -1, hjust = 1), color = "blue") +
-  labs(x = "CPUA (lb/min)", y = "Density", 
-       title = "Histogram of CPUE for x", 
-       subtitle = "Pairs within 5 mi and 72 hrs") + 
-  xlim(0,2000) + 
-  theme_classic()
-}
-  
-
-#boxplot with log-transformed data 
-box.log.plot_ob <- function(x) {
-  x %>% 
-  pivot_longer(cols = c(log_ob_species_cpua, log_nefsc_species_cpua), 
-               names_to = "Trawl", 
-               values_to = "CPUA") %>%
-  filter(CPUA < 10000) %>%
-  ggplot() + 
-  geom_boxplot(aes(x = Trawl, y = CPUA)) + 
-  labs(x = "Trawl Type", y = "Log(CPUA)") + 
-  scale_x_discrete(labels = c("log_nefsc_species_cpua" = "NEFSC", 
-                              "log_ob_species_cpua" = "Observer")) + 
-  theme_classic()
-}
-
-#histogram with log-transformed data 
-hist_log_kh_ob <- function(x) {
-  x %>%  
-  ggplot() + 
-  geom_histogram(aes(x = log_ob_species_cpua, y = ..density..), fill = "red") + 
-  # geom_label(aes(x = Inf, y = Inf, label = "Study Fleet CPUE", vjust =1 , hjust = 1), color = "red") +
-  geom_histogram(aes(x = log_nefsc_species_cpua, y = -..density..), fill = "blue") + 
+  x %>%
+  ggplot() +
+  geom_histogram(aes(x = ob_species_cpua, y = ..density.., fill = "Observer")) +
+  # geom_label(aes(x = Inf, y = Inf, label = "Observer CPUE", vjust =1 , hjust = 1), color = "red") +
+  geom_histogram(aes(x = nefsc_species_cpua, y = -..density.., fill = "NEFSC")) +
   # geom_label(aes(x = Inf, y = -Inf, label = "NEFSC CPUE", vjust = -1, hjust = 1), color = "blue") +
-  labs(x = "Log(CPUA (lb/min))", y = "Density", 
-       title = "Histogram of CPUE for x", 
-       subtitle = "Pairs within 5 mi and 72 hrs") + 
+  labs(x = CPUA_label, y = "Density",
+       # title = "Histogram of CPUE for x",
+       # subtitle = "Pairs within 5 mi and 72 hrs"
+       ) +
+  xlim(0,2000) +
+  scale_fill_manual(name = "Dataset",
+                    values = c("Observer" = "red", "NEFSC" = "blue"),
+                    labels = c("Observer", "NEFSC")) +
   theme_classic()
 }
+#   
+# 
+# #boxplot with log-transformed data 
+# box.log.plot_ob <- function(x) {
+#   x %>% 
+#   pivot_longer(cols = c(log_ob_species_cpua, log_nefsc_species_cpua), 
+#                names_to = "Trawl", 
+#                values_to = "CPUA") %>%
+#   filter(CPUA < 10000) %>%
+#   ggplot() + 
+#   geom_boxplot(aes(x = Trawl, y = CPUA)) + 
+#   labs(x = "Trawl Type", y = logCPUA_lable) + 
+#   scale_x_discrete(labels = c("log_nefsc_species_cpua" = "NEFSC", 
+#                               "log_ob_species_cpua" = "Observer")) + 
+#   theme_classic()
+# }
+# 
+# #histogram with log-transformed data 
+# hist_log_kh_ob <- function(x) {
+#   x %>%  
+#   ggplot() + 
+#   geom_histogram(aes(x = log_ob_species_cpua, y = ..density.., fill = "Observer")) + 
+#   # geom_label(aes(x = Inf, y = Inf, label = "Study Fleet CPUE", vjust =1 , hjust = 1), color = "red") +
+#   geom_histogram(aes(x = log_nefsc_species_cpua, y = -..density.., fill = "NEFSC")) + 
+#   # geom_label(aes(x = Inf, y = -Inf, label = "NEFSC CPUE", vjust = -1, hjust = 1), color = "blue") +
+#   labs(x = logCPUA_lable, y = "Density", 
+#        # title = "Histogram of CPUE for x", 
+#        # subtitle = "Pairs within 5 mi and 72 hrs"
+#        ) + 
+#   scale_fill_manual(name = "Dataset", 
+#                     values = c("Observer" = "red", "NEFSC" = "blue"), 
+#                     labels = c("Observer", "NEFSC")) + 
+#   theme_classic()
+# }
 
 
 
@@ -268,9 +325,9 @@ compare.models_ob <- function(x) {
 ```
 
 
-
+```{r, include = FALSE}
 # Organizing the Paired Tow Data
-```{r}
+
 #filtering for tows cod and yellowtail were caught in both nets and calculating relative efficiency in the study fleet dataset 
 paired_tows_5mi_72hr_re <- paired_tows_5mi_72hr %>%
   filter(SVSPP == 73 & SPECIES_ITIS == 164712 | #cod 
@@ -313,8 +370,10 @@ paired_tows_5mi_72hr_ob_re <- paired_tows_5mi_72hr_ob %>%
   distinct()
 ```
 
+
+```{r, include = FALSE}
 # Species Datasets 
-```{r}
+
 #creating a separate dataset for each species 
 #STUDY FLEET
 #COD
@@ -342,7 +401,7 @@ yellowtailfl_paired_tows_5mi_72hr_ob_re <- paired_tows_5mi_72hr_ob_re %>%
 ```
 
 
-
+***
 
 
 # Study Fleet and NEFSC Pairs
@@ -357,11 +416,16 @@ paired_tows_5mi_72hr_re %>%
   filter(sf_species_cpua < 10000) %>%
   filter(nefsc_species_cpua < 10000) %>%
   ggplot() + 
-  geom_bar(aes(x = EFFORT_ID, y = sf_species_cpua), stat = "identity", fill = "red") + 
-  geom_bar(aes(x = EFFORT_ID, y = -nefsc_species_cpua), stat = "identity", fill = "blue") + 
+  geom_bar(aes(x = EFFORT_ID, y = sf_species_cpua, fill = "Study Fleet"), stat = "identity") + 
+  geom_bar(aes(x = EFFORT_ID, y = -nefsc_species_cpua, fill = "NEFSC"), stat = "identity") + 
   labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
        title = "Comparison of CPUA for Atlantic Cod", 
-       subtitle = "Pairs within 5 mi and 72 hrs")
+       subtitle = "Pairs within 5 mi and 72 hrs") + 
+  scale_fill_manual(name = "Dataset", 
+                    values = c("Study Fleet" = "red", "NEFSC" = "blue"), 
+                    labels = c("Study Fleet", "NEFSC")) + 
+  theme_classic() + 
+  theme(axis.text.x=element_blank())
 
 #Looking at the relative efficiency of the study fleet tows compared to the nefsc survey 
 paired_tows_5mi_72hr_re %>%
@@ -378,22 +442,55 @@ paired_tows_5mi_72hr_re %>%
   labs(x = "Relative Efficiency", y = "Count", 
        title = "Histogram of Relative Efficiency for Atlantic Cod", 
        subtitle = "Pairs within 5 mi and 72 hrs")
+
+#Map of the matched tows 
+paired_tows_5mi_72hr_re %>%
+  filter(SVSPP == 73 & SPECIES_ITIS == 164712) %>%
+  distinct(EFFORT_ID, .keep_all = TRUE) %>%
+  filter(sf_species_cpua < 10000) %>%
+  filter(nefsc_species_cpua < 10000) %>%
+  ggplot() + 
+  geom_sf(data = nefsc_strata, fill = "grey") +
+  geom_polygon(data = NEUS, aes(x=long, y = lat, group = group), fill = "darkgreen",  
+               color="black",inherit.aes = FALSE)  +
+  geom_point(data = cod_paired_tows_5mi_72hr_re, aes(x = END_TOW_LON.x,y = END_TOW_LAT.x, color = "NEFSC")) +
+  geom_point(data = cod_paired_tows_5mi_72hr_re, aes(x = END_TOW_LON.y,y = END_TOW_LAT.y, color = "Study Fleet")) +
+  
+  # geom_segment(data = paired_tows_1mi_24hr, aes(x = START_TOW_LON.x, xend = END_TOW_LON.x,
+  #                                               y = START_TOW_LAT.x, yend = END_TOW_LAT.x)) +
+  coord_sf(ylim = c(39, 44),  xlim = c(-74, -66)) + 
+  scale_colour_manual("", breaks = c("NEFSC", "Study Fleet"), values = c("blue", "red")) +
+  labs(title = "Study Fleet tows Matched to NEFSC tows", subtitle = "within 5 mi and 72 hrs")
+
 ```
 
+<br>
+
+say something about the exploratory plots
+
+<br>
+
+
 #### T-Test
-```{r}
+```{r, warning = FALSE}
 #looking at the boxplot and histograms of the catch per unit area 
 box.plot(cod_paired_tows_5mi_72hr_re)
 hist_kh(cod_paired_tows_5mi_72hr_re)
 
 #log-transforming the data
 cod_paired_tows_5mi_72hr_re <- cod_paired_tows_5mi_72hr_re %>%
-  mutate(log_sf_species_cpua = log(sf_species_cpua), 
-         log_nefsc_species_cpua = log(nefsc_species_cpua))
+  mutate(diff = sf_species_cpua - nefsc_species_cpua,
+         log_sf_species_cpua = log(sf_species_cpua), 
+         log_nefsc_species_cpua = log(nefsc_species_cpua), 
+         diff_of_logs = log_sf_species_cpua - log_nefsc_species_cpua)
 
-#looking at the boxplot and histograms of the log(catch per unit area)
-box.log.plot(cod_paired_tows_5mi_72hr_re)
-hist_log_kh(cod_paired_tows_5mi_72hr_re)
+#looking at the boxplot and histograms of the difference between CPUA
+box.plot_diff(cod_paired_tows_5mi_72hr_re)
+hist_kh_diff(cod_paired_tows_5mi_72hr_re)
+
+#looking at the boxplot and histograms of the diff_og_logs
+box.plot_diff_log(cod_paired_tows_5mi_72hr_re)
+hist_kh_diff_log(cod_paired_tows_5mi_72hr_re)
 
 #assumptions of normality and equal variance are met with the log transformed data, 
 #so the t-test was conducted with the log-transformed data
@@ -408,7 +505,17 @@ cod_ttest
 exp(cod_ttest$estimate)
 exp(cod_ttest$conf.int)
 
+
 ```
+
+<br>
+
+The histograms for the data show that the catch rates for the commercial and survey nets are not normally distributed. However, because the data are paired, two observations (commercial/survey CPUA) from one study unit ('paired tow') the difference in catch-per-unit area needs to be investigated. The difference in catch-per-unit area is not normally distributed and is not symmetric, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed and the boxplot shows relative symmetry, so the analysis was conducted with the log-transformed data.
+
+These data provide substantial evidence that the mean difference between commercial and survey catch rates is non-zero (two-sided p-value < 0.00001 from a paired t-test). The mean for catch rate for Cod for commercial fishermen from the study fleet was estimated to be 2.51 times the mean catch rate for the NEFSC survey (95% confidence interval: 1.72 to 3.64 times).
+
+<br>
+
 
 #### Model Runs
 ```{r}
@@ -486,9 +593,6 @@ cod_paired_tows_5mi_72hr_re1 %>%
 
 
 
-
-
-
 #getting final RE estimate 
 cod_paired_tows_5mi_72hr_re1 %>%
   group_by(VESSEL_NAME) %>%
@@ -524,6 +628,14 @@ summary(cod_glm1)
 
 ```
 
+<br>
+
+explanation of binomial glm results 
+
+<br>
+
+
+***
 
 ### YellowTail Flounder
 #### Exploratory Vizualization 
@@ -533,11 +645,16 @@ paired_tows_5mi_72hr_re %>%
   filter(SVSPP == 105 & SPECIES_ITIS == 172909) %>% 
   distinct(EFFORT_ID, .keep_all = TRUE) %>%
   ggplot() + 
-  geom_bar(aes(x = EFFORT_ID, y = sf_species_cpua), stat = "identity", fill = "blue") + 
-  geom_bar(aes(x = EFFORT_ID, y = -nefsc_species_cpua), stat = "identity", fill = "red") + 
+  geom_bar(aes(x = EFFORT_ID, y = sf_species_cpua, fill = "Study Fleet"), stat = "identity") + 
+  geom_bar(aes(x = EFFORT_ID, y = -nefsc_species_cpua, fill = "NEFSC"), stat = "identity") + 
   labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
        title = "Comparison of CPUA for Yellowtail Flounder", 
-       subtitle = "Pairs within 5 mi and 72 hrs")
+       subtitle = "Pairs within 5 mi and 72 hrs") + 
+  scale_fill_manual(name = "Dataset", 
+                    values = c("Study Fleet" = "red", "NEFSC" = "blue"), 
+                    labels = c("Study Fleet", "NEFSC")) + 
+  theme_classic() + 
+  theme(axis.text.x=element_blank())
 
 #Looking at the relative efficiency of the study fleet tows compared to the nefsc survey 
 paired_tows_5mi_72hr_re %>%
@@ -552,7 +669,32 @@ paired_tows_5mi_72hr_re %>%
   labs(x = "Relative Efficiency", y = "Count", 
        title = "Histogram of Relative Efficiency for Yellowtail Flounder", 
        subtitle = "Pairs within 5 mi and 72 hrs")
+
+
+#Map of the matched tows 
+paired_tows_5mi_72hr_re %>%
+  filter(SVSPP == 105 & SPECIES_ITIS == 172909) %>%
+  distinct(EFFORT_ID, .keep_all = TRUE) %>%
+  ggplot() + 
+  geom_sf(data = nefsc_strata, fill = "grey") +
+  geom_polygon(data = NEUS, aes(x=long, y = lat, group = group), fill = "darkgreen",  
+               color="black",inherit.aes = FALSE)  +
+  geom_point(data = yellowtailfl_paired_tows_5mi_72hr_re, aes(x = END_TOW_LON.x,y = END_TOW_LAT.x, color = "NEFSC")) +
+  geom_point(data = yellowtailfl_paired_tows_5mi_72hr_re, aes(x = END_TOW_LON.y,y = END_TOW_LAT.y, color = "Study Fleet")) +
+  
+  # geom_segment(data = paired_tows_1mi_24hr, aes(x = START_TOW_LON.x, xend = END_TOW_LON.x,
+  #                                               y = START_TOW_LAT.x, yend = END_TOW_LAT.x)) +
+  coord_sf(ylim = c(39, 44),  xlim = c(-74, -66)) + 
+  scale_colour_manual("", breaks = c("NEFSC", "Study Fleet"), values = c("blue", "red")) +
+  labs(title = "Study Fleet tows Matched to NEFSC tows", subtitle = "within 5 mi and 72 hrs")
 ```
+
+<br>
+
+say something about the exploratory plots
+
+<br>
+
 
 #### T-Test
 ```{r}
@@ -562,12 +704,21 @@ hist_kh(yellowtailfl_paired_tows_5mi_72hr_re)
 
 #log-transforming the data
 yellowtailfl_paired_tows_5mi_72hr_re <- yellowtailfl_paired_tows_5mi_72hr_re %>%
-  mutate(log_sf_species_cpua = log(sf_species_cpua), 
-         log_nefsc_species_cpua = log(nefsc_species_cpua))
+  mutate(diff = sf_species_cpua - nefsc_species_cpua,
+         log_sf_species_cpua = log(sf_species_cpua), 
+         log_nefsc_species_cpua = log(nefsc_species_cpua), 
+         diff_of_logs = log_sf_species_cpua - log_nefsc_species_cpua)
 
-#looking at the boxplot and histograms of the log(catch per unit area)
-box.log.plot(yellowtailfl_paired_tows_5mi_72hr_re)
-hist_log_kh(yellowtailfl_paired_tows_5mi_72hr_re)
+#looking at the boxplot and histograms of the difference between CPUA
+box.plot_diff(yellowtailfl_paired_tows_5mi_72hr_re)
+hist_kh_diff(yellowtailfl_paired_tows_5mi_72hr_re)
+
+#looking at the boxplot and histograms of the diff_og_logs
+box.plot_diff_log(yellowtailfl_paired_tows_5mi_72hr_re)
+hist_kh_diff_log(yellowtailfl_paired_tows_5mi_72hr_re)
+
+#assumptions of normality and equal variance are met with the log transformed data, 
+#so the t-test was conducted with the log-transformed data
 
 #assumptions of normality and equal variance are not met with the log transformed data, 
 #so the t-test was conducted with the log-transformed data
@@ -583,6 +734,15 @@ exp(yellowtail_ttest$estimate)
 exp(yellowtail_ttest$conf.int)
 
 ```
+
+<br>
+
+The histograms for the data show that the catch rates for the commercial and survey nets are not normally distributed. However, because the data are paired, two observations (commercial/survey CPUA) from one study unit ('paired tow') the difference in catch-per-unit area needs to be investigated. The difference in catch-per-unit area is not normally distributed and is not symmetric, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed and the boxplot shows relative symmerty, so the analysis was conducted with the log-transformed data.
+
+These data provide inconclusive evidence that the mean difference between commercial and survey catch rates is non-zero (two-sided p-value = 0.061 from a paired t-test). The mean for catch rate for Yellowtail Flounder for commercial fishermen from the study fleet was estimated to be 1.44 times the mean catch rate for the NEFSC survey (95% confidence interval: 0.98 to 2.11 times).
+
+<br>
+
 
 #### Model Runs 
 ```{r}
@@ -675,6 +835,14 @@ yellowtailfl_paired_tows_5mi_72hr_re1 %>%
 
 ```
 
+<br>
+
+explaination of binomial glms results 
+
+<br>
+
+
+***
 ***
 
 # Observer and NEFSC Pairs
@@ -686,11 +854,16 @@ paired_tows_5mi_72hr_ob_re %>%
   filter(SVSPP == 73 & NESPP4 == 818) %>% 
   distinct(trip_haul_ID, .keep_all = TRUE) %>%
   ggplot() + 
-  geom_bar(aes(x = trip_haul_ID, y = ob_species_cpua), stat = "identity", fill = "blue") + 
-  geom_bar(aes(x = trip_haul_ID, y = -nefsc_species_cpua), stat = "identity", fill = "red") + 
+  geom_bar(aes(x = trip_haul_ID, y = ob_species_cpua, fill = "Observer"), stat = "identity") + 
+  geom_bar(aes(x = trip_haul_ID, y = -nefsc_species_cpua, fill = "NEFSC"), stat = "identity") + 
   labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
        title = "Comparison of CPUA for Atlantic Cod", 
-       subtitle = "Pairs within 5 mi and 72 hrs")
+       subtitle = "Pairs within 5 mi and 72 hrs") + 
+  scale_fill_manual(name = "Dataset", 
+                    values = c("Observer" = "red", "NEFSC" = "blue"), 
+                    labels = c("Observer", "NEFSC")) + 
+  theme_classic() + 
+  theme(axis.text.x=element_blank())
 
 #Looking at the relative efficiency of the study fleet tows compared to the nefsc survey 
 paired_tows_5mi_72hr_ob_re %>%
@@ -705,9 +878,36 @@ paired_tows_5mi_72hr_ob_re %>%
   labs(x = "Relative Efficiency", y = "Count", 
        title = "Histogram of Relative Efficiency for Atlantic Cod", 
        subtitle = "Pairs within 5 mi and 72 hrs")
+
+
+#Map of the matched tows 
+paired_tows_5mi_72hr_ob_re %>%
+  filter(SVSPP == 73 & NESPP4 == 818) %>%
+  distinct(trip_haul_ID, .keep_all = TRUE) %>%
+  ggplot() + 
+  geom_sf(data = nefsc_strata, fill = "grey") +
+  geom_polygon(data = NEUS, aes(x=long, y = lat, group = group), fill = "darkgreen",  
+               color="black",inherit.aes = FALSE)  +
+  geom_point(data = cod_paired_tows_5mi_72hr_ob_re, aes(x = END_TOW_LON.x,y = END_TOW_LAT.x, color = "NEFSC")) +
+  geom_point(data = cod_paired_tows_5mi_72hr_ob_re, aes(x = END_TOW_LON.y,y = END_TOW_LAT.y, color = "Observer")) +
+  
+  # geom_segment(data = paired_tows_1mi_24hr, aes(x = START_TOW_LON.x, xend = END_TOW_LON.x,
+  #                                               y = START_TOW_LAT.x, yend = END_TOW_LAT.x)) +
+  coord_sf(ylim = c(39, 44),  xlim = c(-74, -66)) + 
+  scale_colour_manual("", breaks = c("NEFSC", "Observer"), values = c("blue", "red")) +
+  labs(title = "Observer tows Matched to NEFSC tows", subtitle = "within 5 mi and 72 hrs")
+
+
 ```
 
-#### T-Tests
+<br>
+
+say something about the exploratory plots
+
+<br>
+
+
+#### T-Test
 ```{r}
 #looking at the boxplot and histograms of the catch per unit area 
 box.plot_ob(cod_paired_tows_5mi_72hr_ob_re)
@@ -715,26 +915,39 @@ hist_kh_ob(cod_paired_tows_5mi_72hr_ob_re)
 
 #log-transforming the data
 cod_paired_tows_5mi_72hr_ob_re <- cod_paired_tows_5mi_72hr_ob_re %>%
-  mutate(log_ob_species_cpua = log(ob_species_cpua), 
-         log_nefsc_species_cpua = log(nefsc_species_cpua))
+  mutate(diff = ob_species_cpua - nefsc_species_cpua,
+         log_ob_species_cpua = log(ob_species_cpua), 
+         log_nefsc_species_cpua = log(nefsc_species_cpua), 
+         diff_of_logs = log_ob_species_cpua - log_nefsc_species_cpua)
 
-#looking at the boxplot and histograms of the log(catch per unit area)
-box.log.plot_ob(cod_paired_tows_5mi_72hr_ob_re)
-hist_log_kh_ob(cod_paired_tows_5mi_72hr_ob_re)
+#looking at the boxplot and histograms of the difference between CPUA
+box.plot_diff(cod_paired_tows_5mi_72hr_ob_re)
+hist_kh_diff(cod_paired_tows_5mi_72hr_ob_re)
 
-#assumptions of normality and equal variance are met with the log transformed data, 
-#so the t-test was conducted with the log-transformed data
+# #looking at the boxplot and histograms of the diff_og_logs
+# box.plot_diff_log(cod_paired_tows_5mi_72hr_ob_re)
+# hist_kh_diff_log(cod_paired_tows_5mi_72hr_ob_re)
 
-cod_ttest_ob <- t.test(cod_paired_tows_5mi_72hr_ob_re$log_ob_species_cpua, cod_paired_tows_5mi_72hr_ob_re$log_nefsc_species_cpua,
+#assumptions of normality and equal variance are met with the data, 
+#so the t-test was conducted with the raw data
+
+cod_ttest_ob <- t.test(cod_paired_tows_5mi_72hr_ob_re$ob_species_cpua, cod_paired_tows_5mi_72hr_ob_re$nefsc_species_cpua,
                               paired = TRUE)
 cod_ttest_ob
 
 
-#back transform the estimate
-exp(cod_ttest_ob$estimate)
-exp(cod_ttest_ob$conf.int)
+# #back transform the estimate
+# exp(cod_ttest_ob$estimate)
+# exp(cod_ttest_ob$conf.int)
 
 ```
+
+<br>
+
+These data provide no evidence that the mean difference between commercial and survey catch rates is non-zero (two-sided p-value = 0.58 from a paired t-test). The mean catch rate for Cod for commercial fishermen from the observer dataset was estimated to be 35.52 lb/km2 less than the mean catch rate for the NEFSC survey (95% confidence interval: 165.77 to +94.74 times).
+
+<br>
+
 
 #### Model Runs 
 ```{r}
@@ -802,6 +1015,28 @@ cod_paired_tows_5mi_72hr_ob_re %>%
              y = fitted, color = AVGDEPTH)) + 
   geom_jitter()
 
+#bottom temp
+cod_paired_tows_5mi_72hr_ob_re %>%
+  ggplot(aes(x = trawl_type, 
+             y = fitted, color = BOTTEMP)) + 
+  geom_jitter() + 
+  coord_flip()
+
+#ground cable length  
+cod_paired_tows_5mi_72hr_ob_re %>%
+  ggplot(aes(x = trawl_type, 
+             y = fitted, color = GRCABLEN)) + 
+  geom_jitter() + 
+  coord_flip()
+
+#sweep diameter
+cod_paired_tows_5mi_72hr_ob_re %>%
+  ggplot(aes(x = trawl_type, 
+             y = fitted, color = SWEEPDIA)) + 
+  geom_jitter() + 
+  coord_flip()
+
+
 
 
 
@@ -827,7 +1062,11 @@ cod_paired_tows_5mi_72hr_ob_re %>%
 
 ```
 
+<br>
 
+explaination of the binomal glm results 
+
+<br>
 
 
 ### YellowTail Flounder
@@ -838,11 +1077,16 @@ paired_tows_5mi_72hr_ob_re %>%
   filter(SVSPP == 105 & NESPP4 == 1230) %>% 
   distinct(trip_haul_ID, .keep_all = TRUE) %>%
   ggplot() + 
-  geom_bar(aes(x = trip_haul_ID, y = ob_species_cpua), stat = "identity", fill = "blue") + 
-  geom_bar(aes(x = trip_haul_ID, y = -nefsc_species_cpua), stat = "identity", fill = "red") + 
+  geom_bar(aes(x = trip_haul_ID, y = ob_species_cpua, fill = "Observer"), stat = "identity") + 
+  geom_bar(aes(x = trip_haul_ID, y = -nefsc_species_cpua, fill = "NEFSC"), stat = "identity") + 
   labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
        title = "Comparison of CPUA for Yellowtail Flounder", 
-       subtitle = "Pairs within 5 mi and 72 hrs")
+       subtitle = "Pairs within 5 mi and 72 hrs") + 
+  scale_fill_manual(name = "Dataset", 
+                    values = c("Observer" = "red", "NEFSC" = "blue"), 
+                    labels = c("Observer", "NEFSC")) + 
+  theme_classic() + 
+  theme(axis.text.x=element_blank())
 
 #Looking at the relative efficiency of the study fleet tows compared to the nefsc survey 
 paired_tows_5mi_72hr_ob_re %>%
@@ -857,9 +1101,34 @@ paired_tows_5mi_72hr_ob_re %>%
   labs(x = "Relative Efficiency", y = "Count", 
        title = "Histogram of Relative Efficiency for Yellowtail Flounder", 
        subtitle = "Pairs within 5 mi and 72 hrs")
+
+
+#Map of the matched tows 
+paired_tows_5mi_72hr_ob_re %>%
+  filter(SVSPP == 105 & NESPP4 == 1230) %>%
+  distinct(trip_haul_ID, .keep_all = TRUE) %>%
+  ggplot() + 
+  geom_sf(data = nefsc_strata, fill = "grey") +
+  geom_polygon(data = NEUS, aes(x=long, y = lat, group = group), fill = "darkgreen",  
+               color="black",inherit.aes = FALSE)  +
+  geom_point(data = yellowtailfl_paired_tows_5mi_72hr_ob_re, aes(x = END_TOW_LON.x,y = END_TOW_LAT.x, color = "NEFSC")) +
+  geom_point(data = yellowtailfl_paired_tows_5mi_72hr_ob_re, aes(x = END_TOW_LON.y,y = END_TOW_LAT.y, color = "Observer")) +
+  
+  # geom_segment(data = paired_tows_1mi_24hr, aes(x = START_TOW_LON.x, xend = END_TOW_LON.x,
+  #                                               y = START_TOW_LAT.x, yend = END_TOW_LAT.x)) +
+  coord_sf(ylim = c(39, 44),  xlim = c(-74, -66)) + 
+  scale_colour_manual("", breaks = c("NEFSC", "Observer"), values = c("blue", "red")) +
+  labs(title = "Observer tows Matched to NEFSC tows", subtitle = "within 5 mi and 72 hrs")
 ```
 
-#### T-Tests
+<br>
+
+Say something ab the exploratory plots 
+
+<br>
+
+
+#### T-Test
 ```{r}
 #looking at the boxplot and histograms of the catch per unit area 
 box.plot_ob(yellowtailfl_paired_tows_5mi_72hr_ob_re)
@@ -867,12 +1136,18 @@ hist_kh_ob(yellowtailfl_paired_tows_5mi_72hr_ob_re)
 
 #log-transforming the data
 yellowtailfl_paired_tows_5mi_72hr_ob_re <- yellowtailfl_paired_tows_5mi_72hr_ob_re %>%
-  mutate(log_ob_species_cpua = log(ob_species_cpua), 
-         log_nefsc_species_cpua = log(nefsc_species_cpua))
+  mutate(diff = ob_species_cpua - nefsc_species_cpua,
+         log_ob_species_cpua = log(ob_species_cpua), 
+         log_nefsc_species_cpua = log(nefsc_species_cpua), 
+         diff_of_logs = log_ob_species_cpua - log_nefsc_species_cpua)
 
-#looking at the boxplot and histograms of the log(catch per unit area)
-box.log.plot_ob(yellowtailfl_paired_tows_5mi_72hr_ob_re)
-hist_log_kh_ob(yellowtailfl_paired_tows_5mi_72hr_ob_re)
+#looking at the boxplot and histograms of the difference between CPUA
+box.plot_diff(yellowtailfl_paired_tows_5mi_72hr_ob_re)
+hist_kh_diff(yellowtailfl_paired_tows_5mi_72hr_ob_re)
+
+#looking at the boxplot and histograms of the diff_og_logs
+box.plot_diff_log(yellowtailfl_paired_tows_5mi_72hr_ob_re)
+hist_kh_diff_log(yellowtailfl_paired_tows_5mi_72hr_ob_re)
 
 #assumptions of normality and equal variance are met with the log transformed data, 
 #so the t-test was conducted with the log-transformed data
@@ -885,7 +1160,21 @@ yellowtail_ttest_ob
 #back transform the estimate
 exp(yellowtail_ttest_ob$estimate)
 exp(yellowtail_ttest_ob$conf.int)
+
+#get the back transformed estimate into a percentage
+1 - exp(yellowtail_ttest_ob$estimate)
+1 - exp(yellowtail_ttest_ob$conf.int)
 ```
+
+<br>
+
+The histograms for the data show that the catch rates for the commercial and survey nets are not normally distributed. However, because the data are paired, two observations (commercial/survey CPUA) from one study unit ('paired tow') the difference in catch-per-unit area needs to be investigated. The difference in catch-per-unit area is not normally distributed and is not symmetric, so a log-transformation was performed. The histograms of the log-transformed data show that they are relatively normally distributed and the boxplot shows relative symmetry, so the analysis was conducted with the log-transformed data.
+
+
+These data provide suggestive evidence that the mean difference between commercial and survey catch rates is non-zero (two-sided p-value = 0.029 from a paired t-test). The mean catch rate for Yellowtail Flounder for commercial fishermen from the observer dataset was estimated to be 37% less than the mean catch rate for the NEFSC survey (95% confidence interval: 0.045% to 57%).
+
+<br>
+
 
 #### Model Runs 
 ```{r}
@@ -976,7 +1265,10 @@ yellowtailfl_paired_tows_5mi_72hr_ob_re %>%
 
 ```
 
+<br>
 
+explaination of the binomal glm results 
 
-
+<br>
+<br>
 
