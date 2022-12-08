@@ -5,6 +5,14 @@ date: "2022-11-14"
 ---
 
 ```{r, include = FALSE, message = FALSE, warning = FALSE}
+library(asht)
+library(mosaic)
+library(gridExtra)
+library(olsrr)
+library(car)
+library(Hmisc)
+library(MASS)
+
 library(tidyverse)
 library(readxl)
 library(janitor)
@@ -30,6 +38,8 @@ library(purrr)
 library(rsq)
 library(car)
 library(jtools)
+
+
 ```
 
 ```{r, include = FALSE}
@@ -336,7 +346,7 @@ paired_tows_5mi_72hr_re <- paired_tows_5mi_72hr %>%
   drop_na(sf_species_cpua, nefsc_species_cpua) %>%
   filter(CATCHWT_updated > 0) %>%
   filter(sf_species_cpua > 0) %>%
-  mutate(relative_efficiency = sf_species_cpua/(nefsc_species_cpua + sf_species_cpua)) %>%
+  mutate(relative_efficiency = nefsc_species_cpua/(nefsc_species_cpua + sf_species_cpua)) %>%
   mutate(mgmt_area = case_when(
     AREA_CODE %in% c(511, 512, 513, 514, 515) ~ "GOM", 
     AREA_CODE %in% c(521, 522, 526, 525, 561, 562, 551, 552) ~ "GB", 
@@ -346,6 +356,7 @@ paired_tows_5mi_72hr_re <- paired_tows_5mi_72hr %>%
     month(START_TOW_DATE_GMT.x) %in% c(03, 04, 05) ~ "Spring", 
     month(START_TOW_DATE_GMT.x) %in% c(09, 10, 11) ~ "Fall", 
   )) %>%
+  drop_na(trawl_type) %>%
   distinct() 
 
 
@@ -356,7 +367,7 @@ paired_tows_5mi_72hr_ob_re <- paired_tows_5mi_72hr_ob %>%
          ) %>%
   drop_na(ob_species_cpua, nefsc_species_cpua) %>%
   filter(CATCHWT_updated > 0) %>%
-  mutate(relative_efficiency = ob_species_cpua/(nefsc_species_cpua + ob_species_cpua)) %>%
+  mutate(relative_efficiency = nefsc_species_cpua/(nefsc_species_cpua + ob_species_cpua)) %>%
   mutate(mgmt_area = case_when(
     AREA.x %in% c(511, 512, 513, 514, 515) ~ "GOM", 
     AREA.x %in% c(521, 522, 526, 525, 561, 562, 551, 552) ~ "GB", 
@@ -367,6 +378,7 @@ paired_tows_5mi_72hr_ob_re <- paired_tows_5mi_72hr_ob %>%
     month(START_TOW_DATE_GMT) %in% c(09, 10, 11) ~ "Fall", 
   )) %>%
   mutate(trawl_type = as.factor(trawl_type)) %>%
+  drop_na(trawl_type) %>%
   distinct()
 ```
 
@@ -432,7 +444,7 @@ paired_tows_5mi_72hr_re %>%
   ggplot() + 
   geom_bar(aes(x = EFFORT_ID, y = sf_species_cpua, fill = "Study Fleet"), stat = "identity") + 
   geom_bar(aes(x = EFFORT_ID, y = -nefsc_species_cpua, fill = "NEFSC"), stat = "identity") + 
-  labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
+  labs(x = "Tow Number", y = CPUA_label, 
        title = "Comparison of CPUA for Atlantic Cod", 
        subtitle = "Pairs within 5 mi and 72 hrs") + 
   scale_fill_manual(name = "Dataset", 
@@ -555,6 +567,17 @@ par(mfrow=c(2,2))
 plot(codm_optimal)
 
 
+#look at overdispersion      -> no issue w overdispersion 
+#deviance goodness-of-fit test
+pchisq(codm_optimal$deviance, df = codm_optimal$df.residual)
+
+#plot of deviance residuals against the fitted means
+gf_point(residuals(codm_optimal, type = "deviance") ~ fitted(codm_optimal)) %>%
+  gf_hline(yintercept = 0, color = "blue") %>%
+  gf_hline(yintercept = 2, color = "gray60", linetype = 2) %>%
+  gf_hline(yintercept = -2, color = "gray60", linetype = 2) %>%
+  gf_labs(x = "Fitted Means", y = "Deviance Residuals")
+
 
 
 #back transform the estimates and CIs 
@@ -655,7 +678,7 @@ explanation of binomial glm results
 
 ***
 
-#### YellowTail Flounder
+### YellowTail Flounder
 #### Exploratory Visualization 
 ```{r}
 #Looking at the cpua for the paired tows for each species 
@@ -665,7 +688,7 @@ paired_tows_5mi_72hr_re %>%
   ggplot() + 
   geom_bar(aes(x = EFFORT_ID, y = sf_species_cpua, fill = "Study Fleet"), stat = "identity") + 
   geom_bar(aes(x = EFFORT_ID, y = -nefsc_species_cpua, fill = "NEFSC"), stat = "identity") + 
-  labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
+  labs(x = "Tow Number", y = CPUA_label, 
        title = "Comparison of CPUA for Yellowtail Flounder", 
        subtitle = "Pairs within 5 mi and 72 hrs") + 
   scale_fill_manual(name = "Dataset", 
@@ -785,7 +808,19 @@ yellowtailm_optimal <- glm(relative_efficiency ~ VESSEL_NAME + AVGDEPTH + BOTTEM
 summary(yellowtailm_optimal)
 
 par(mfrow=c(2,2))
-plot(codm_optimal)
+plot(yellowtailm_optimal)
+
+
+#look at overdispersion 
+#deviance goodness-of-fit test
+pchisq(yellowtailm_optimal$deviance, df = yellowtailm_optimal$df.residual)
+
+#plot of deviance residuals against the fitted means
+gf_point(residuals(yellowtailm_optimal, type = "deviance") ~ fitted(yellowtailm_optimal)) %>%
+  gf_hline(yintercept = 0, color = "blue") %>%
+  gf_hline(yintercept = 2, color = "gray60", linetype = 2) %>%
+  gf_hline(yintercept = -2, color = "gray60", linetype = 2) %>%
+  gf_labs(x = "Fitted Means", y = "Deviance Residuals")
 
 
 
@@ -874,7 +909,7 @@ paired_tows_5mi_72hr_ob_re %>%
   ggplot() + 
   geom_bar(aes(x = trip_haul_ID, y = ob_species_cpua, fill = "Observer"), stat = "identity") + 
   geom_bar(aes(x = trip_haul_ID, y = -nefsc_species_cpua, fill = "NEFSC"), stat = "identity") + 
-  labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
+  labs(x = "Tow Number", y = CPUA_label, 
        title = "Comparison of CPUA for Atlantic Cod", 
        subtitle = "Pairs within 5 mi and 72 hrs") + 
   scale_fill_manual(name = "Dataset", 
@@ -978,13 +1013,27 @@ ggpairs(cod_paired_tows_5mi_72hr_ob_re, columns = c("trawl_type", "season", "mgm
 codm <- fit.models_ob(cod_paired_tows_5mi_72hr_ob_re)
 compare.models_ob(codm)
 
-
 #storing the optimal model and plotting the diagnostics
 codm_ob_optimal <- glm(relative_efficiency ~ trawl_type + AVGDEPTH, family = binomial, data = cod_paired_tows_5mi_72hr_ob_re)
 summary(codm_ob_optimal)
 
 par(mfrow=c(2,2))
 plot(codm_ob_optimal)
+
+
+#look at overdispersion 
+#deviance goodness-of-fit test
+pchisq(codm_ob_optimal$deviance, df = codm_ob_optimal$df.residual)
+
+#plot of deviance residuals against the fitted means
+gf_point(residuals(codm_ob_optimal, type = "deviance") ~ fitted(codm_ob_optimal)) %>%
+  gf_hline(yintercept = 0, color = "blue") %>%
+  gf_hline(yintercept = 2, color = "gray60", linetype = 2) %>%
+  gf_hline(yintercept = -2, color = "gray60", linetype = 2) %>%
+  gf_labs(x = "Fitted Means", y = "Deviance Residuals")
+
+
+
 
 
 #back transform the estimates and CIs 
@@ -1107,7 +1156,7 @@ paired_tows_5mi_72hr_ob_re %>%
   ggplot() + 
   geom_bar(aes(x = trip_haul_ID, y = ob_species_cpua, fill = "Observer"), stat = "identity") + 
   geom_bar(aes(x = trip_haul_ID, y = -nefsc_species_cpua, fill = "NEFSC"), stat = "identity") + 
-  labs(x = "Tow Number", y = "CPUA (lbs/km2)", 
+  labs(x = "Tow Number", y = CPUA_label, 
        title = "Comparison of CPUA for Yellowtail Flounder", 
        subtitle = "Pairs within 5 mi and 72 hrs") + 
   scale_fill_manual(name = "Dataset", 
@@ -1213,13 +1262,27 @@ ggpairs(yellowtailfl_paired_tows_5mi_72hr_ob_re, columns = c("trawl_type", "seas
 yellowtailm_ob <- fit.models_ob(yellowtailfl_paired_tows_5mi_72hr_ob_re)
 compare.models_ob(yellowtailm_ob)
 
-
 #storing the optimal model and plotting the diagnostics
 yellowtailm_ob_optimal <- glm(relative_efficiency ~ trawl_type + season, family = binomial, data = yellowtailfl_paired_tows_5mi_72hr_ob_re)
 summary(yellowtailm_ob_optimal)
 
 par(mfrow=c(2,2))
 plot(yellowtailm_ob_optimal)
+
+
+#look at overdispersion 
+#deviance goodness-of-fit test
+pchisq(yellowtailm_ob_optimal$deviance, df = yellowtailm_ob_optimal$df.residual)
+
+#plot of deviance residuals against the fitted means
+gf_point(residuals(yellowtailm_ob_optimal, type = "deviance") ~ fitted(yellowtailm_ob_optimal)) %>%
+  gf_hline(yintercept = 0, color = "blue") %>%
+  gf_hline(yintercept = 2, color = "gray60", linetype = 2) %>%
+  gf_hline(yintercept = -2, color = "gray60", linetype = 2) %>%
+  gf_labs(x = "Fitted Means", y = "Deviance Residuals")
+
+
+
 
 
 #back transform the estimates and CIs 
