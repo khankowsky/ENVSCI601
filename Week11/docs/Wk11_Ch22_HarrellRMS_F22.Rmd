@@ -1,0 +1,1018 @@
+---
+title: 'Week 11 GLM Poisson and other GLMs: Sleuth Chapter 22 & Harrell on Regression
+  Modeling Stratgies'
+author: "Eugene D. Gallagher"
+date: "11/15/22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(BAS)
+library(bestglm) # for Bayesian model averaging
+library(broom)
+library(car)
+library(GGally)  # for ggpairs
+library(Hmisc)  # for the describe function
+library(Sleuth3)
+library(dplyr)     # data manipulation
+library(ggformula) # graphics
+library(rms)
+library(Sleuth3)
+library(tidyverse)
+```
+
+***
+
+# Homework 8-10 Basic Homework Solutions (5:30 PM - 6:15 PM)
+
+## Homework 8 
+
+### ex13.16: Toxic effects of Copper & Zinc, Orla O'Brien presenter
+
+### ex13.18: El Nino & Hurricanes, Alice Wynn presenter
+
+## Homework 9
+
+### ex18.10 Salk polio vaccine, Chloe Jackson presenter
+
+### ex19.23 Who looks after the kids, Kali Roberts presenter 
+
+## Homework 10
+
+### ex20.16 Bumpus natural selection, Gallagher will present the BAS solution
+
+### ex21.18 HIV & Circumcision, Jamie Beshore presenter
+
+### ex21.21 Predicting quality of spring desert wildflower display (Ordered categorical response), Shibo Cao
+
+### Master problem: Analyze ex2116 with investr and drc package, Shibo Cao
+
+<br>
+
+# Old business: 
+
+# ex20.16 Bumpus natural selection, solved with automated selection & Bayesian model averaging
+
+## Background talk on Model Uncertainty and Averaging for Categorical Data Analysis
+
+### Based on a talk by Chris Franck (Virginia Tech, 6/21/22)
+
+![Franck Webinar, Slide 1. ](..\images\Franck_Slide01.jpg)
+
+<br>
+
+![Franck Webinar, Slide 2.](..\images\Franck_Slide02.jpg)
+
+<br>
+
+**Overview of crab data**
+* Data obtained from Alan Agresti’s Introduction to Categorical Data Analysis book (Agresti 2018).
+* The data measure whether or not a female horseshoe crab has additional male suitors beyond their current mate, essentially.
+The outcome is binary.
+* There are four candidate predictors including: shell width, weight, shell color, spine condition.
+
+<br>
+
+![Franck Webinar, Slide 3.](..\images\Franck_Slide03.jpg)
+
+<br>
+
+**The data contain four potential predictors**
+
+* Model selection involves choosing single “best” model, and all subsequent inference is based on that model. Many selection
+approaches available.
+* There are $2^{p}$ possible models. Sixteen for the crab example. Model space grows exponentially with number of new
+predictors.
+* The above approach ignores the uncertainty in the model selection process. Model averaging is one way to sensibly
+conduct inference in the context of all available models.
+* In cases where p is large, the model space becomes too large to computationally assess every model. Algorithms such
+as Markov Chain Monte Carlo Model Composition ($MC^{2}$) can be used to search the space effectively. See (Hoeting et al. 1999) for a good overview.
+
+```{r Franck Code Chunk 1}
+#R demo for ADA SDNS webinar
+#An Introduction to Model Uncertainty and Averaging for Categorical Data Analysis
+#Chris Franck, June 21, 2022
+
+#Import data
+Crabs<-read.table("http://www.stat.ufl.edu/~aa/cat/data/Crabs.dat",
+                  header=TRUE)
+
+#Probability predictions for simple logistic regression
+#maximum likelihood
+grid<-seq(0,35,.1)
+plot(Crabs$width,jitter(Crabs$y,.1),pch=16,ylab='Satellites?',xlab="Shell width")
+fit<-glm(y~width,family=binomial,data=Crabs)
+grid.frame<-data.frame(width=grid)
+grid.pred<-predict.glm(fit,newdata=grid.frame,type='response')
+lines(grid, grid.pred,lwd=2,col='red')
+
+
+#plot the data
+par(mfrow=c(2,2),las=1)
+plot(Crabs$width,jitter(Crabs$y,.1),pch=16,ylab='Satellites?',xlab="Shell width")
+plot(jitter(Crabs$color,.3),jitter(Crabs$y,.1),pch=16,ylab='Satellites?',xlab="Shell color")
+plot(jitter(Crabs$spine,.3),jitter(Crabs$y,.1),pch=16,ylab='Satellites?',xlab="Spine condition")
+plot(Crabs$weight,jitter(Crabs$y,.1),pch=16,ylab="Satellites?")
+```
+
+<br>
+
+Multicollinearity is a concern
+
+```{r Franck code chunk 2}
+#A look at potential multicollinearity
+y.j<-Crabs$y+rnorm(173,0,.1)
+color.j<-Crabs$color+rnorm(173,0,.1)
+spine.j<-Crabs$spine+rnorm(173,0,.1)
+pairs(data.frame(y=y.j,width=Crabs$width, color=color.j, spine=spine.j, weight=Crabs$weight),
+      pch=16)
+```
+
+<br>
+
+### Part 2 Bayesian model selection and averaging
+
+<br>
+
+![Franck Webinar, Slide 4.](..\images\Franck_Slide04.jpg)
+
+<br>
+
+![Franck Webinar, Slide 5.](..\images\Franck_Slide05.jpg)
+
+<br>
+
+![Franck Webinar, Slide 6.](..\images\Franck_Slide06.jpg)
+
+<br>
+
+![Franck Webinar, Slide 7.](..\images\Franck_Slide07.jpg)
+
+<br>
+
+![Franck Webinar, Slide 8.](..\images\Franck_Slide08.jpg)
+
+<br>
+
+![Franck Webinar, Slide 9.](..\images\Franck_Slide09.jpg)
+
+<br>
+
+![Franck Webinar, Slide 10.](..\images\Franck_Slide10.jpg)
+
+<br>
+
+![Franck Webinar, Slide 11.](..\images\Franck_Slide11.jpg)
+
+<br>
+
+![Franck Webinar, Slide 12.](..\images\Franck_Slide12.jpg)
+
+<br>
+
+![Franck Webinar, Slide 13.](..\images\Franck_Slide13.jpg)
+
+<br>
+
+### Let’s do an R demo!
+* Scope: manually implement the BIC approximation to posterior model probabilities and inclusion probabilities.
+
+** Further: Chris Franck demonstrates usage of the BAS package to implement fully Bayesian model averaging (including posterior distributions on coefficients)
+
+```{r Franck code chunk 3}
+#BIC approximation approach to posterior model probablities
+# library(bestglm)
+# ?bestglm
+Xy<-data.frame(Crabs[,4:7],y=Crabs$y)
+BIC.list<-bestglm(Xy,family=binomial, IC="BIC",TopModels=16,
+                  RequireFullEnumerationQ = TRUE)
+#bestglm will not output all 16 models, only 15
+#I manually add the 16th model (spine only)
+#this row was determined from
+#bestglm(Xy,family=binomial, IC="BIC",TopModels=5,nvmax=1)$BestModels
+Model.frame<-rbind.data.frame(BIC.list$BestModels,
+c(FALSE, FALSE, FALSE,  TRUE,  230.7776))
+Model.frame
+table(apply(Model.frame[,1:4],1,sum))
+```
+
+
+```{r Franck code chunk 4}
+#The next chunk of code implements the formulas for the BIC approximation
+#to posterior model probabilities in the slides
+bic.vec<-Model.frame$Criterion
+base.bic<-bic.vec[1]
+BFk1<-exp(-.5*(bic.vec-base.bic))
+#uniform prior on model space
+mod.prior<-rep(1/16,16)
+base.prior<-mod.prior[1]
+p.m1gy<-1/sum((mod.prior/base.prior)*BFk1)
+post.mod.prob<-(mod.prior/base.prior)*BFk1*p.m1gy
+Model.frame$post.mod.prob<-round(post.mod.prob,3)
+
+#A look at the posterior model probabilities
+Model.frame
+```
+
+
+```{r Franck code chunk 5}
+#Compute and plot the posterior inclusion probabilities
+width.incl<-sum(post.mod.prob[Model.frame$width==1])
+weight.incl<-sum(post.mod.prob[Model.frame$weight==1])
+color.incl<-sum(post.mod.prob[Model.frame$color==1])
+spine.incl<-sum(post.mod.prob[Model.frame$spine==1])
+par(mfrow=c(1,1),las=1)
+plot(1:4,c(width.incl,weight.incl,color.incl,spine.incl),
+        ylim=c(0,1),type='h',axes=FALSE,
+     ylab='Inclusion probability',xlab="Candidate predictor")
+axis(1,at=1:4,labels = c('width','weight','color','spine'))
+axis(2,las=1)
+abline(h=.5,lty=3,col='lightgray')
+```
+
+
+```{r Franck code chunk 6}
+#BAS offers a convenient fully Bayesian way to do all of this
+# install.packages("BAS")
+# library(BAS)
+Crabs.BAS <- bas.glm(y ~ .,n.models= 2^4,data=Crabs[,3:7],
+                    method="MCMC", MCMC.iterations=5000,
+                    betaprior=bic.prior(), family=binomial(),
+                    modelprior=uniform())
+plot(Crabs.BAS)
+
+Crabs.BAS$probne0
+
+#obtain model averaged prediction
+BMA.pred<-predict(Crabs.BAS,type="response")$fit
+#obtain highest posterior model probability predictions
+HPM.pred<-predict(Crabs.BAS,type="response",estimator="HPM")$fit
+
+#simple logistic fit from the beginning of the demo
+SLR.pred<-predict.glm(fit,type="response")
+plot(SLR.pred,BMA.pred)
+abline(0,1)
+
+plot(HPM.pred,BMA.pred)
+abline(0,1)
+
+#point biserial correlations between outcome and predictions of each type
+# cor(BAS.pred,Crabs$y) #Model averaged predictions
+cor(HPM.pred,Crabs$y) #Simple logistic regression predictions
+cor(SLR.pred,Crabs$y) #Simple logistic regression predictions
+
+#examine model averaged posterior distributions of coefficients
+coef.BMA <- coef(Crabs.BAS)
+plot(coef.BMA)
+```
+
+** Downsides of BMA**
+* Tacitly assumes true model is in candidate set (m closed). More realistically, the true model is not in the candidate set (m
+open).
+* BMA concentrates posterior model probability on a single model as sample size increases (Yao et al. 2018). The model
+that wins is closest to the true model in s KL divergence sense. So you end up giving basically 100% of posterior model
+probability to a model which is not technically the true one in an open setting.
+* Recent work has been done on the stacking of Bayesian predictive distributions(Yao et al. 2018). The basic idea of
+stacking is to weigh the candidate models based on their ability to predict out-of-sample data rather than posterior model
+probability. This is useful for prediction and overcomes the tendency of BMA to put all posterior model probability on a
+single model as sample size increases.
+
+<br>
+
+![Franck Webinar, Slide 14.](..\images\Franck_Slide14.jpg)
+
+<br>
+
+![Franck Webinar, Slide 15.](..\images\Franck_Slide15.jpg)
+
+<br>
+
+![Franck Webinar, Slide 16.](..\images\Franck_Slide16.jpg)
+
+## Now apply Bayesian model averaging to Sleuth ex20.16 Bumpus Natural Selection Data
+
+```{r Gallagher ex2016_1}
+sparrow <- ex2016
+str(sparrow)
+sparrow$surviveIndicator <- ifelse(sparrow$Status =="Survived",1,0)
+view(sparrow)
+library(GGally)  # for ggpairs
+ggpairs(sparrow, columns = 2:10, ggplot2::aes(colour=Status),
+        upper = list(continuous = wrap("cor", size = 2)))
+```
+
+
+```{r Gallagher ex2016_2}
+sparrowGlm <- glm(surviveIndicator~ AG+TL+AE+WT+BH+HL+FL+TT+SK+KL,
+                  data = sparrow, family = binomial)
+S(sparrowGlm)
+
+# Many of the explanatory variable are correlated necessitating variable selection.
+# Check the VIF's
+vif(sparrowGlm)
+# 3 variables have VIF's greater than 4, indicating that they have confidence
+# intervals twice as wide as if they weren't uncorrelated (car)
+```
+
+
+```{r Gallagher ex2016_3}
+# Using Franck's webinar (Gallagher participated on 6/1/22), find the 'best'
+# model using BAS, Bayesian model averaging
+
+#BAS offers a convenient fully Bayesian way to find the best model using BIC
+
+sparrows.BAS <- bas.glm(surviveIndicator~ AG+TL+AE+WT+BH+HL+FL+TT+SK+KL,
+                     n.models= 2^10,data=sparrow,
+                     method="MCMC", MCMC.iterations=5000,
+                     betaprior=bic.prior(), family=binomial(),
+                     modelprior=uniform())
+# There are 10 predictors, so 2^10 (1024) is the number of models to check 
+plot(sparrows.BAS, ask = F)
+options(width = 100)
+S(sparrows.BAS)
+
+image(sparrows.BAS, rotate = F)
+
+# confint(sparrows.BAS) # confusing errors
+# plot(confint(sparrows.BAS, parm = 2:10)) #errors
+
+# HPM Highest probability model
+HPM <- predict(sparrows.BAS, estimator = "HPM")
+variable.names(HPM)
+op <- par(mfrow = c(1, 1))
+plot(confint(coef(sparrows.BAS, estimator = "HPM")))
+ # Two of the predictors (HL and KL) have huge Beta's & I don't know why
+```
+
+
+```{r Gallagher ex2016_4}
+# Median predictive model, all terms with inclusion p >0.5
+# MPM <- predict(sparrows.BAS, estimator = "MPM") # error
+# variable.names(MPM)
+
+#sparrows.BAS$model # 5 top-ranked models with inclusion indicated 1.00000
+S(sparrows.BAS)
+```
+
+
+```{r Gallagher ex2016_5}
+# Best Model Average solution. see vignette for description of BMA
+# PREDICTION
+muhat.BMA <- fitted(sparrows.BAS, estimator = "BMA")
+BMA <- predict(sparrows.BAS, estimator = "BMA")
+
+# predict has additional slots for fitted values under BMA, predictions under each model
+names(BMA)
+```
+
+
+```{r Gallagher ex2016_6}
+# Best predictive model, see vignette
+BPM <- predict(sparrows.BAS, estimator = "BPM")
+variable.names(BPM)
+
+# Let's see how they compare: HPB and BPM nearly identical
+GGally::ggpairs(data.frame(
+  HPM = as.vector(HPM$fit), # this used predict so we need to extract fitted values
+#  MPM = as.vector(MPM$fit), # this used fitted
+  BPM = as.vector(BPM$fit), # this used fitted
+  BMA = as.vector(BMA$fit)
+))
+```
+
+
+```{r Gallagher ex2016_7}
+# Final model, EDG code, use HPM model
+sparrow.HPM <- glm(surviveIndicator~ TL+WT+HL+KL,
+                  data = sparrow, family = binomial)
+S(sparrow.HPM)  # S from the car package, note the BIC of 90.94
+vif(sparrow.HPM)
+sparrow.BPM <- glm(surviveIndicator~ AG + TL + WT + HL + FL + KL,
+                   data = sparrow, family = binomial)
+S(sparrow.BPM) # Note the BIC of 99.80
+```
+
+
+```{r Gallagher ex2016_8}
+# Plot fit versus 4 BPM descriptors, see describe function
+# describe(sparrow) # from Harrell's Hmisc package, only need to set up grids
+
+# PLot Survivorship versus TL (To)
+par(mfrow=c(2,2), las=1)
+grid<-seq(153,166,.1)
+plot(sparrow$TL,jitter(sparrow$surviveIndicator,.1),pch=16,
+     ylab='Survived?',xlab="Total Length (mm)")
+fit<-glm(surviveIndicator~TL,family=binomial,data=sparrow)
+grid.frame<-data.frame(TL=grid)
+grid.pred<-predict.glm(fit,newdata=grid.frame,type='response')
+lines(grid, grid.pred,lwd=2,col='red')
+```
+
+
+```{r Gallagher ex2016_9}
+# PLot Survivorship versus WT
+grid<-seq(23.2,31,.1)
+plot(sparrow$WT,jitter(sparrow$surviveIndicator,.1),pch=16,
+     ylab='Survived?',xlab="Weight (g)")
+fit<-glm(surviveIndicator~WT,family=binomial,data=sparrow)
+grid.frame<-data.frame(WT=grid)
+grid.pred<-predict.glm(fit,newdata=grid.frame,type='response')
+lines(grid, grid.pred,lwd=2,col='red')
+```
+
+
+```{r Gallagher ex2016_10}
+# PLot Survivorship versus HL
+grid<-seq(.66,.78,.01)
+plot(sparrow$HL,jitter(sparrow$surviveIndicator,.1),pch=16,
+     ylab='Survived?',xlab="Humerus Length (mm)")
+fit<-glm(surviveIndicator~HL,family=binomial,data=sparrow)
+grid.frame<-data.frame(HL=grid)
+grid.pred<-predict.glm(fit,newdata=grid.frame,type='response')
+lines(grid, grid.pred,lwd=2,col='red')
+```
+
+
+```{r Gallagher ex2016_11}
+# PLot Survivorship versus KL
+grid<-seq(.77,.93,.01)
+plot(sparrow$KL,jitter(sparrow$surviveIndicator,.1),pch=16,
+     ylab='Survived?',xlab="Keel Length (mm)")
+fit<-glm(surviveIndicator~KL,family=binomial,data=sparrow)
+grid.frame<-data.frame(KL=grid)
+grid.pred<-predict.glm(fit,newdata=grid.frame,type='response')
+lines(grid, grid.pred,lwd=2,col='red')
+par(mfrow=c(1,1), las=1)
+```
+
+### Old Chapter 21 material: Multinomial logistic regression 
+
+#### SHALLOW WATER OBJECT DETECTION, CHARACTERIZATION, AND LOCALIZATION THROUGH REFLECTIVITY BACKSCATTER FROM PHASE-MEASURING SIDESCAN SONAR by Bryan P. McCormack SFE M.Sc. 2022
+![Bryan McCormack 2022 M.Sc. Figure 7](..\images\McCormack_Fig7.jpg)
+
+<br>
+![Bryan McCormack 2022 M.Sc. Figure 1](..\images\McCormack_Fig1.jpg)
+
+<br>
+
+![Bryan McCormack 2022 M.Sc.](..\images\Fig5.png)
+
+# Sleuth Chapter 22: Poisson regression
+
+![Sleuth3 Display 22.1](..\images\Display2201.jpg)
+_Fit the Poisson Log-Linear Regression Model_
+
+![Poisson Log-Linear Regression Model Sleuth3 p 677](..\images\Poissonmodel.jpg)
+
+_Statistical Conclusion_
+
+* The average number of successful matings increased with age, for male elephants bettween 25 and 50 years old
+
+![Sleuth3 Display 22.2 2nd edition](..\images\Display2202_2nd.jpg)
+
+
+![Sleuth3 Display 22.2 3rd edition](..\images\Display2202_3rd.jpg)
+![Sleuth3 Display 22.2 Gallagher's Matlab program](..\images\Display2202_Matlab.jpg)
+![Sleuth3 Display 22.2 OLS Regression with Gallagher's Matlab program](..\images\Display2202_OLS_Matlab.jpg)
+![Sleuth3 Display 22.2 SPSS](..\images\Display2202_SPSS.jpg)
+![Sleuth3 Display 22.2 Adam Loy's tidysleuth](..\images\display2202_tidy.jpeg)
+
+* The data provided no evidence of a leveling off of mating with age (quadratic term 1-sided p value = 0.33)
+
+* The estimated mean number of successful matings (in 8 years) for 27-year-old males was 1.31, and the mean increased by a factor of 2.00 for each 10 year increase in age up to about 50 years (95% confidence interval for the mulitplicative factor: 1.52 to 2.60)
+
+_Scope of Inference_
+
+* There may be bias due to measurement error in estimating the age of each elephant and lack of independence.
+
+* Bias would also accrue if successful matings weren't successfully attributed.
+
+* Attempting to apply to a larger population would requie careful attention to the method of sampling.
+
+***
+
+_Sleuth 3 Code for Case Study 20.1_
+
+```{r Sleuth3 code1}
+str(case2201)
+attach(case2201)
+```
+
+_EXPLORATION AND MODEL BUILDING_ 
+
+```{r Sleuth3 code2}
+plot(Matings ~ Age,  log="y")
+ageSquared  <- Age^2
+myGlm1 <- glm(Matings ~ Age + ageSquared, family=poisson)
+summary(myGlm1)  # No evidence of a need for ageSquared
+```
+
+_INFERENCE AND INTERPRETATION_
+
+```{r Sleuth3 code3}
+myGlm2  <- update(myGlm1, ~ . - ageSquared)
+summary(myGlm2)
+anova(myGlm2,myGlm1,test="Chisq") # May not be valid, many counts < 5
+beta  <- myGlm2$coef
+exp(beta[2])  #1.071107
+exp(confint(myGlm2,2))  #1.042558 1.100360 
+```
+
+_Interpretation:_ Associated with each 1 year increase in age is a 7% increase in the mean number of matings (95% confidence interval 4% to 10% increase).
+
+_GRAPHICAL DISPLAY FOR PRESENTATION_
+
+```{r Sleuth3 code4}
+plot(Matings ~ Age, ylab="Number of Successful Matings",
+     xlab="Age of Male Elephant (Years)",
+     main="Age and Number of Successful Matings for 41 African Elephants",
+     pch=21, bg="green", cex=2, lwd=2)
+dummyAge <- seq(min(Age),max(Age), length=50)
+lp <- beta[1] + beta[2]*dummyAge
+curve <- exp(lp)
+lines(curve ~ dummyAge,lwd=2)  
+detach(case2201)
+```
+
+_Adam Loy's tidysleuth code_
+
+```{r case4201_tidy1}
+options(digits = 4, show.signif.stars = FALSE)
+```
+
+_Plot the jittered data on a log scale_
+
+```{r case4201_tidy2}
+gf_jitter(log(Matings + 0.5) ~ Age, data = case2201, height = 0.25, width = 0.25, pch = 1) %>%
+  gf_labs(x = "Age (years) -- Slightly Jittered", y = "Number of Matings (log scale)")
+```
+
+_Fit the Poisson glm, with quadratic terms._
+
+```{r case4201_tidy3}
+glm1 <- glm(Matings ~ Age + I(Age^2), data = case2201, family = poisson)
+summary(glm1)
+summary(fitted(glm1))
+tidy(glm1)
+```
+
+_Eliminate the quadratic term_
+
+```{r case4201_tidy4}
+reduced <- update(glm1, . ~ . - I(Age^2))
+summary(reduced)
+```
+
+_Calculate Wald confidence interval_
+
+```{r case4201_tidy5}
+beta1 <- coef(reduced)[2]
+se <- sqrt(vcov(reduced)[2,2])
+beta1 + c(-1, 1) * qnorm(.975) * se
+exp(beta1 + c(-1, 1) * qnorm(.975) * se)
+```
+
+_Profile-likelihood confidence interval_
+
+```{r case4201_tidy6}
+confint(glm1)
+```
+
+_Compare the full and reduced models_
+
+```{r case4201_tidy7}
+anova(reduced, glm1, test = "Chisq")
+```
+
+![Gallagher's Matlab analysis of OLS, Poisson & Poisson quadratic](..\images\display2202_Matlab_OLS_quadratic.jpg)
+
+***
+
+## Case Study 22.2 Characteristics Associated with Salamander Habitat_--An Observational Study
+
+* The Del Norte Salamander (_plethodon elongates_) is a small (5-7 cm) salamander found among rock rubble, rock outcrops, and moss-covered talus in a narrow range of norwest California. 
+
+* To study the relationship to old-growth forest, researchers selected 47 sites from plausible salamander habitat in national forest and parkland. At each site, a 7 m x 7 m search area was examined for the number of salamanders. Display 22.3 shows the number of salamanders and characteristics of the forest cover.
+
+![Sleuth2 Display 22.3](..\images\display2203_2nd.jpg)
+
+* Statistical Conclusion
+
+- After accounting for canopy cover, there is no evidence that the mean number os salamanders depends on forest age ( p = 0.78 from F = 0.53 with 6 and 35 df from a quasilikelihood fit to a log-linear model).
+
+- Two distinct canopy cover conditions were evident: closed canopies with percentages > 70%  and open canopy with percentages < 70%. The salamanders followed different curved abundance patterns under the two conditions.
+
+***
+
+![Sleuth2 Display 22.4](..\images\display2204_2nd.jpg)
+![Gallagher's Matlab model display](..\images\display2204_Matlab.jpg)
+
+![Gallagher's Matlab Quasilikelihood model display](..\images\display2204_Matlab_Quasilikelihood.jpg)
+
+***
+
+![Sleuth2 Display 22.5](..\images\display2205_2nd.jpg)
+
+<br>
+
+Plot of Deviance residuals
+
+![Sleuth3 Display 22.7](..\images\display2207_3rd.jpg)
+
+***
+
+_Sleuth 3 Code for Case Study 20.2_
+
+_EXPLORATION AND MODEL BUILDING_
+
+```{r Sleuth3cs2002_1, warning=FALSE}
+attach(case2202)
+
+logSalamanders <- log(Salamanders + .5)
+logForestAge   <- log(ForestAge + .5)
+myMatrix       <- cbind(PctCover,logForestAge,logSalamanders)
+
+if (require(car)) { # Use car library
+  scatterplotMatrix(myMatrix, diagonal="histogram", reg.line=FALSE, spread=FALSE)
+}
+```
+
+_Fit the Poisson log-linear model_
+
+```{r Sleuth3cs2002_2}
+myGlm1  <- glm(Salamanders ~ PctCover + logForestAge + PctCover:logForestAge, 
+               family=poisson)
+summary(myGlm1)   # Backward elimination...
+myGlm2 <- update(myGlm1, ~ . - PctCover:logForestAge)
+summary(myGlm2)
+myGlm3  <- update(myGlm2, ~ . - logForestAge)
+summary(myGlm3)   # PctCover is the only explanatory variable remaining
+```
+
+_Plot the penultimate model_
+
+```{r Sleuth3cs2002_3}
+plot(Salamanders ~ PctCover)  # It appears that there are 2 distributions
+# of Salamander counts; one for PctCover < 70 and one for PctCover > 70
+```
+
+_See if PctCover is associated Salamanders in each subset_
+
+```{r Sleuth3cs2002_4}
+myGlm4 <- glm(Salamanders ~ PctCover, family=poisson,subset=(PctCover > 70))
+summary(myGlm4)           # No evidence of an effect for this subset
+myGlm5 <- glm(Salamanders ~ PctCover, family=poisson,subset=(PctCover < 70))
+summary(myGlm5)           # No evidence on this subset either
+```
+
+_INFERENCE  (2 means)_
+
+```{r Sleuth3cs2002_5}
+Group <- ifelse(PctCover > 70,"High","Low")
+Group <- factor(Group, levels=c("Low","High") )  # Make "Low Cover" the ref group
+myGlm6 <- glm(Salamanders ~ Group, family=poisson)
+summary(myGlm6)
+```
+
+_GRAPHICAL DISPLAY FOR PRESENTATION_
+
+```{r Sleuth3cs2002_6}
+plot(Salamanders ~ PctCover, ylab="Number of Salamanders",
+     xlab="Percentage of Canopy Covered",
+     main="Number of Salamanders versus Percent Canopy Cover",
+     pch=21,bg="green", cex=2, lwd=2)
+
+beta <- myGlm6$coef
+lines(c(0,55),exp(c(beta[1],beta[1])),lwd=2)
+text(56,exp(beta[1]),paste("mean= ",round(exp(beta[1]),1)),adj=0)
+lines(c(76,93),exp(c(beta[1]+beta[2],beta[1]+beta[2])),lwd=2)
+text(56,exp(beta[1]+beta[2]),paste("mean=",round((beta[1]+beta[2]),1)),adj=-1)
+detach(case2202)
+```
+
+_What a poor R graphic_ 
+
+![Gallagher's Matlab Quasilikelihood model display](..\images\display2204_Matlab_Quasilikelihood.jpg)
+
+***
+
+_Adam Loy's (Carleton) tidySleuth case 22.2 code_
+
+```{rRScs2202_tidy_1}
+options(digits = 4, show.signif.stars = FALSE)
+summary(case2202)
+```
+
+_## EXPLORATION AND MODEL BUILDING_
+
+```{rRScs2202_tidy_2}
+logSalamanders <- log(Salamanders + .5)
+logForestAge   <- log(ForestAge + .5)
+myMatrix       <- cbind(PctCover,logForestAge,logSalamanders)
+if (require(car)) { # Use car library
+  scatterplotMatrix(myMatrix, diagonal="histogram", reg.line=FALSE, spread=FALSE)
+}
+```
+
+_Fit the Poisson glm__
+
+```{rRScs2202_tidy_2}
+myGlm1  <- glm(Salamanders ~ PctCover + logForestAge + PctCover:logForestAge, 
+               family=poisson)
+summary(myGlm1)   # Backward elimination...
+myGlm2 <- update(myGlm1, ~ . - PctCover:logForestAge)
+summary(myGlm2)
+myGlm3  <- update(myGlm2, ~ . - logForestAge)
+summary(myGlm3)   # PctCover is the only explanatory variable remaining
+```
+
+_Plot the data_
+
+```{rRScs2202_tidy_2}
+plot(Salamanders ~ PctCover)  # It appears that there are 2 distributions
+```
+
+Number of Salamander counts; one for PctCover < 70 and one for PctCover > 70
+
+_See if PctCover is associated Salamanders in each subset_
+
+```{rRScs2202_tidy_3}
+myGlm4 <- glm(Salamanders ~ PctCover, family=poisson,subset=(PctCover > 70))
+summary(myGlm4)           # No evidence of an effect for this subset
+myGlm5 <- glm(Salamanders ~ PctCover, family=poisson,subset=(PctCover < 70))
+summary(myGlm5)           # No evidence on this subset either
+```
+
+_INFERENCE (2 means)_
+
+```{rRScs2202_tidy_4}
+Group <- ifelse(PctCover > 70,"High","Low")
+Group <- factor(Group, levels=c("Low","High") )  # Make "Low Cover" the ref group
+myGlm6 <- glm(Salamanders ~ Group, family=poisson)
+summary(myGlm6)
+```
+
+
+```{rRScs2202_tidy_5}
+# Using 70% as the dividing line
+case2202$Closed <- ifelse(case2202$PctCover > 70,"closed", "open")
+
+ssom <- glm(Salamanders ~ PctCover * ForestAge * Closed + I(PctCover^2) + I(ForestAge^2) + 
+              I(PctCover^2):Closed + I(ForestAge^2):Closed, 
+            data = case2202, family = poisson)
+summary(ssom)
+
+1 - pchisq(89.178, df = 35)
+
+gf_point(residuals(ssom, type = "deviance") ~ fitted(ssom)) %>%
+  gf_hline(yintercept = 0, color = "blue") %>%
+  gf_hline(yintercept = 2, color = "gray60", linetype = 2)  %>%
+  gf_hline(yintercept = -2, color = "gray60", linetype = 2) %>%
+  gf_labs(x = "Fitted means", y = "Deviance residual")
+
+# The full model via quasi-likelihood
+ssom <- update(ssom, . ~ ., family = quasipoisson)
+
+# The reduced (inferential) model
+inferential_model <- glm(Salamanders ~ PctCover * Closed + I(PctCover^2) + 
+                           I(PctCover^2):Closed, data = case2202, family = quasipoisson)
+
+# drop-in-deviance F test
+anova(inferential_model, ssom, test = "F")
+```
+
+_Plot the model_
+
+```{rRScs2202_tidy_6}
+aug <- augment(inferential_model)
+gf_point(Salamanders ~ PctCover, data = aug) %>%
+  gf_line(exp(.fitted) ~ PctCover, color = ~Closed) %>%
+  gf_labs(x = "Percentage of Canopy Cover",
+          y = "Salamander Count")
+
+```
+
+![tidySleuth Case Study 22.2 ](..\images\RScs2202_tidy.jpeg)
+
+![RScs2202 Final Model from Matlab](..\images\RScs2202_FinalModel.jpg)
+![Gallagher's Matlab Quasilikelihood model display](..\images\display2204_Matlab_Quasilikelihood.jpg)
+
+<br>
+
+## Melanie Jetter's Poisson Regression of New England Hurricanes
+
+![Jetter Poisson Regression EEOS611](..\images\Jetter_Poisson.jpg)
+![Jetter Poisson Regression EEOS611](..\images\Jetter_Poisson_nb.jpg)
+
+ ![Jetter Poisson Regression Model EEOS611](..\images\Jetter_Model.jpg)
+ 
+<br>
+
+## Another example of the need for negative binomial glms
+
+ ![VerHoef Seals 2007](..\images\VerHoef.jpg)
+ ![VerHoef Seals 2007](..\images\VerHoefFig2.jpg)
+ 
+## Another Case Study Migrating Elk, a Poisson regression
+
+![Robinson et al. (2013) AIC](..\images\RobinsonElk.jpg)
+
+<br>
+
+# Frank Harrell's Regression Modeling Strategies: Highlights
+
+## Harrell's Modeling principles
+
+**What can keep a sample of data from being appropriate for modeling** 
+
+1. Most important predictor or response variables not collected
+
+2. Subjects in the dataset are ill-defined or not representative of the population to which inferences are needed 
+
+3. Data collection sites do not represent the population of sites
+
+4. Key variables missing in large numbers of subjects
+
+5. Data not missing at random
+
+6. No operational definitions for key variables and/or measurement errors severe
+
+7. No observer variability studies done
+
+**What else can go wrong in modeling?** 
+
+1. The process generating the data is not stable.
+
+2. The model is misspecified with regard to nonlinearities or interactions, or there are predictors missing.
+
+3. The model is misspecified in terms of the transformation of the response variable or the model's distributional assumptions.
+
+4. The model contains discontinuities (e.g., by categorizing continuous predictors or setting regression shapes with sudden changes) that can be gamed by users.
+
+5. Correlations among subjects are not specified, or the correlation structure is misspecified, resulting in inefficient parameter estimates and overconfident inference.
+
+6. The model is overfitted, resulting in predictions that are too extreme or positive associations that are false.
+
+7. The user of the model relies on predictions obtained by extrapolating to combinations of predictor values well outside the range of the dataset used to develop the model.
+
+8. Accurate and discriminating predictions can lead to behavior changes that make future predictions inaccurate.
+
+### Comparing two models 
+
+Level playing field (independent datasets, same number of candidate d.f., careful bootstrapping)
+
+1.	Criteria
+
+	a.	calibration
+
+	b.	discrimination
+
+	c.	face validity
+
+	d.	measurement errors in required predictors
+
+	e.	use of continuous predictors (which are usually better defined than categorical ones)
+
+	f.	omission of “insignicant"variables that nonetheless make sense as risk factors
+
+	g.	simplicity (though this is less important with the availability of computers)
+
+	h.	lack of fit for specific types of subjects
+
+** Preferred Modeling Strategy in a Nutshell**
+
+1.	Decide how many d.f. can be spent
+
+2.	Decide where to spend them
+
+3.	Spend them
+
+4.	Don't reconsider, especially if inference needed
+
+# Harrell's Example of Poisson Regression: Sicilian hospital admissions for acute coronary events after a smoking ban in Sicily 10 Jan 2005 (Bernal et al. 2017)
+
+![Bernal et al. 2017](..\images\Bernal_Title.jpg)
+
+<br>
+
+![Bernal et al. 2017](..\images\Bernal_Fig4.jpg)
+
+<br>
+
+```{r SicilyCVER_1}
+# options (prType ='latex') # applies to printingmodelfits
+getHdata (sicily ) #fetch dataset from hbiostat.org/data
+d<-sicily
+dd<-datadist (d); options (datadist = 'dd')
+g <- function (x) exp(x) * 100000
+off <-list ( stdpop = mean (d$ stdpop )) # offset for prediction (383464.4)
+w <- geom_point (aes(x=time , y= rate ), data =d)
+v <- geom_vline (aes( xintercept =37 , col=I('red')))
+yl <- ylab ('Acute Coronary Cases Per 100,000')
+f <- Glm(aces ~ offset(log(stdpop)) + rcs(time,6), data=d, family = poisson)
+f$aic
+```
+
+# Plot the data
+
+```{r SicilyCVER_2}
+ggplot(Predict(f, fun=g, offset =off)) + w + v + yl
+```
+
+# Save knot locations
+
+```{r SicilyCVER_3}
+k <- attr (rcs(d$time, 6), 'parms')
+k
+kn <- k
+```
+
+
+# rcspline.eval is the rcs workhorse
+
+## Now fit seasonal patterns with a cosine function, 12-month period
+
+```{r SicilyCVER_4}
+h <-  function (x) cbind(rcspline.eval (x, kn),
+                         sin=sin (2*pi*x/12), cos=cos (2*pi*x/12))
+f <- Glm( aces ~ offset (log( stdpop )) + gTrans (time, h),
+         data =d, family = poisson )
+f$aic
+```
+
+```{r SicilyCVER_5}
+ggplot (Predict(f, fun=g, offset =off)) + w + v + yl
+```
+
+<br>
+
+# Next add more nodes near intervention to allow for sudden change
+
+```{r SicilyCVER_6}
+kn <- sort (c(k, c(36 , 37, 38)))
+f <-Glm( aces ~ offset (log(stdpop)) + gTrans (time , h),
+         data =d, family = poisson )
+f$aic
+```
+
+
+```{r SicilyCVER_7}
+ggplot(Predict (f, fun=g, offset =off)) + w + v + yl
+```
+
+# Now make the slow trend simpler (6 knots) and more finely control times at which predictions are requested, to handle discontinuity.
+
+```{r SicilyCVER_8}
+# Harrell uses greater than or equal 37, but I don't know how to code that
+h <- function (x) cbind ( rcspline.eval (x, k),
+                         sin=sin (2*pi*x/12) , cos=cos (2*pi*x/12),
+                         jump =x > 36.999)
+f <-  Glm( aces ~ offset (log( stdpop )) + gTrans (time, h),
+         data =d, family = poisson)
+f$aic
+
+times <- sort (c(seq (0, 60, length =200), 36.998 , 37, 37.001 ))
+```
+
+# Final plot
+
+```{r SicilyCVER_9}
+ggplot(Predict(f, time =times ,fun=g, offset =off)) + w + v + yl
+```
+
+
+```{r SicilyCVER_10}
+# Look at fit statistics, especially evidence for the jump
+# summary(f)
+# summary generates Latex code which is unreadable, i'll regenrate f with glm
+f2 <-  glm( aces ~ offset (log( stdpop )) + gTrans (time, h),
+           data =d, family = poisson)
+# These two lines not in Harrell's code, but match his output.
+summary(f2)
+anova(f2,test="Chisq")
+
+# Strong evidence for a jump effect
+# gTrans(time, h)jump    -0.126814   0.031270   -4.055 5.00e-05 ***
+exp(-0.126814) # 0.8808975
+```
+
+There was a decrease of 12% in cardiovascular events resulting from the cigarette ban with strong evidence for seasonality 
+
+# Harrell's titanic analysis using binomial logistic regression and rcs
+
+![Harrell's Titanic Analysis](..\images\Titanic.jpg)
+
+# Next Tuesday (11/22/22): Multilevel models
+
+**Note only 3 classes left (no GAMs this year, see Andrews Chapter 13 for a great review of nonlinear regression)
+
+## Readings for next week on Multilevel (Mixed) models
+
+* Hurlbert (1984) on pseudoreplication
+
+* Chapter 14 Multifactor studies without replication
+
+* Chapter 16 Nested, repeated measures (longitudinal), mixed, and other multilevel/hierarchical response models.
+
+* Andrews Chapter 12 on Multilevel models
